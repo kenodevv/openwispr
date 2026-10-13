@@ -1,5 +1,0 @@
-<Solution>
-  <Project Path="WhisperClaud.Core.Tests/WhisperClaud.Core.Tests.csproj" />
-  <Project Path="WhisperClaud.Core/WhisperClaud.Core.csproj" />
-  <Project Path="WhisperClaud.Windows/WhisperClaud.Windows.csproj" />
-</Solution>

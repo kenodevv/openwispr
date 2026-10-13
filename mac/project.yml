@@ -1,4 +1,4 @@
-name: WhisperClaud
+name: OpenWispr
 options:
   bundleIdPrefix: de.keno
   deploymentTarget:
@@ -24,11 +24,11 @@ packages:
     url: https://github.com/sindresorhus/KeyboardShortcuts
     from: "1.10.0"
 targets:
-  WhisperClaud:
+  OpenWispr:
     type: application
     platform: macOS
     sources:
-      - path: WhisperClaud
+      - path: OpenWispr
         excludes:
           - "Resources/Info.plist"
       - path: ../shared/prompts
@@ -38,39 +38,39 @@ targets:
       - package: FluidAudio
       - package: KeyboardShortcuts
     info:
-      path: WhisperClaud/Resources/Info.plist
+      path: OpenWispr/Resources/Info.plist
       properties:
-        CFBundleName: WhisperClaud
-        CFBundleDisplayName: WhisperClaud
+        CFBundleName: OpenWispr
+        CFBundleDisplayName: OpenWispr
         CFBundleShortVersionString: "0.1.0"
         CFBundleVersion: "1"
         CFBundleIconFile: ""
         LSUIElement: true
         LSMinimumSystemVersion: "15.0"
-        NSMicrophoneUsageDescription: "WhisperClaud records your voice and turns it into text locally on this Mac."
+        NSMicrophoneUsageDescription: "OpenWispr records your voice and turns it into text locally on this Mac."
         NSHumanReadableCopyright: ""
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: de.keno.whisperclaud
+        PRODUCT_BUNDLE_IDENTIFIER: de.keno.openwispr
         GENERATE_INFOPLIST_FILE: NO
-  WhisperClaudTests:
+  OpenWisprTests:
     type: bundle.unit-test
     platform: macOS
-    sources: [WhisperClaudTests]
+    sources: [OpenWisprTests]
     dependencies:
-      - target: WhisperClaud
+      - target: OpenWispr
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: de.keno.whisperclaud.tests
+        PRODUCT_BUNDLE_IDENTIFIER: de.keno.openwispr.tests
         GENERATE_INFOPLIST_FILE: YES
 schemes:
-  WhisperClaud:
+  OpenWispr:
     build:
       targets:
-        WhisperClaud: all
-        WhisperClaudTests: [test]
+        OpenWispr: all
+        OpenWisprTests: [test]
     run:
       config: Debug
     test:
       config: Debug
-      targets: [WhisperClaudTests]
+      targets: [OpenWisprTests]

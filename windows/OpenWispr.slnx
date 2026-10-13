@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="OpenWispr.Core.Tests/OpenWispr.Core.Tests.csproj" />
+  <Project Path="OpenWispr.Core/OpenWispr.Core.csproj" />
+  <Project Path="OpenWispr.Windows/OpenWispr.Windows.csproj" />
+</Solution>

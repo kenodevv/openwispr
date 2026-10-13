@@ -20,11 +20,11 @@ jobs:
         run: dotnet restore
       - name: Test core
         working-directory: windows
-        run: dotnet test WhisperClaud.Core.Tests --no-restore -c Release
+        run: dotnet test OpenWispr.Core.Tests --no-restore -c Release
       - name: Publish app
         working-directory: windows
-        run: dotnet publish WhisperClaud.Windows -c Release -r win-x64 --self-contained false -o publish
+        run: dotnet publish OpenWispr.Windows -c Release -r win-x64 --self-contained false -o publish
       - uses: actions/upload-artifact@v4
         with:
-          name: WhisperClaud-Windows
+          name: OpenWispr-Windows
           path: windows/publish

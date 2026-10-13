@@ -1,7 +1,7 @@
-PROJECT = WhisperClaud.xcodeproj
-SCHEME  = WhisperClaud
+PROJECT = OpenWispr.xcodeproj
+SCHEME  = OpenWispr
 DERIVED = build
-APP     = $(DERIVED)/Build/Products/Debug/WhisperClaud.app
+APP     = $(DERIVED)/Build/Products/Debug/OpenWispr.app
 
 # Signing: ad-hoc by default. Create mac/Local.mk (git-ignored) to use your certificate, e.g.
 #   CODE_SIGN_IDENTITY = Apple Development
@@ -17,10 +17,10 @@ generate:
 	xcodegen generate --quiet
 
 build: generate
-	xcodebuild -project $(PROJECT) -scheme $(SCHEME) -configuration Debug -derivedDataPath $(DERIVED) -destination 'platform=macOS' build 2>&1 | grep -E "error:|warning: .*WhisperClaud/|BUILD " | sort -u
+	xcodebuild -project $(PROJECT) -scheme $(SCHEME) -configuration Debug -derivedDataPath $(DERIVED) -destination 'platform=macOS' build 2>&1 | grep -E "error:|warning: .*OpenWispr/|BUILD " | sort -u
 
 run: build
-	-pkill -x WhisperClaud 2>/dev/null; sleep 0.3
+	-pkill -x OpenWispr 2>/dev/null; sleep 0.3
 	open "$(APP)"
 
 test: generate

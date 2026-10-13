@@ -1,6 +1,6 @@
-# WhisperClaud
+# OpenWispr
 
-Hold a key, speak, release. Your words land in whatever you were typing, cleaned up the way you meant them. A Wispr-Flow-style dictation app for **macOS** and **Windows**.
+Hold a key, speak, release. Your words land in whatever you were typing, cleaned up the way you meant them. An open-source dictation app for **macOS** and **Windows**, inspired by Wispr Flow. OpenWispr is an independent project and not affiliated with Wispr.
 
 - **Speech-to-text runs on your machine.** NVIDIA Parakeet TDT v3 (25 European languages incl. German and English), via Core ML on Apple Silicon and ONNX Runtime on Windows. Nothing is uploaded; it works offline and costs nothing.
 - **Cleanup by the engine of your choice.** Claude (best quality), a local LLM through Ollama (free), or plain rules (free, instant). The cleanup step removes fillers ("ähm", "uh"), resolves self-corrections ("Monday, no, Tuesday"), adds punctuation, formats lists, and matches the tone of the app you are in: casual in Slack, proper in Mail, prompt-ready in a terminal.
@@ -12,7 +12,7 @@ Hold a key, speak, release. Your words land in whatever you were typing, cleaned
 
 ```bash
 brew install xcodegen
-git clone https://github.com/kenodevv/whisperclaud && cd whisperclaud/mac
+git clone https://github.com/kenodevv/openwispr && cd openwispr/mac
 make run
 ```
 
@@ -25,9 +25,9 @@ Signing: builds are ad-hoc signed by default, which works locally. To keep permi
 Download the latest build from the Actions artifacts (release downloads coming) or build it yourself:
 
 ```powershell
-git clone https://github.com/kenodevv/whisperclaud; cd whisperclaud\windows
-dotnet publish WhisperClaud.Windows -c Release -r win-x64 -o publish
-.\publish\WhisperClaud.exe
+git clone https://github.com/kenodevv/openwispr; cd openwispr\windows
+dotnet publish OpenWispr.Windows -c Release -r win-x64 -o publish
+.\publish\OpenWispr.exe
 ```
 
 No special permissions are needed. The default hold-to-talk key is **Ctrl + Win** (Right Ctrl, Right Alt and F13 are alternatives). The speech model (~600 MB) downloads on first start.
@@ -56,8 +56,8 @@ Claude needs an API key from [console.anthropic.com](https://console.anthropic.c
 
 ```
 mac/        SwiftUI app (XcodeGen project.yml, Makefile, unit + Parakeet integration tests)
-windows/    .NET 8 solution: WhisperClaud.Core (shared logic, tests, builds anywhere),
-            WhisperClaud.Windows (WPF app)
+windows/    .NET 8 solution: OpenWispr.Core (shared logic, tests, builds anywhere),
+            OpenWispr.Windows (WPF app)
 shared/     prompts used by both apps
 .github/    CI: macOS build + tests, Windows build + tests, secret scanning
 ```

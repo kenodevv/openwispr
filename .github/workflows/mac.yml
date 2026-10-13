@@ -22,15 +22,15 @@ jobs:
       - name: Build and unit-test
         working-directory: mac
         run: |
-          xcodebuild -project WhisperClaud.xcodeproj -scheme WhisperClaud -configuration Debug \
+          xcodebuild -project OpenWispr.xcodeproj -scheme OpenWispr -configuration Debug \
             -derivedDataPath build -destination 'platform=macOS' \
             CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= \
-            test -only-testing:WhisperClaudTests/FlowFormatterTests 2>&1 | tail -40
+            test -only-testing:OpenWisprTests/FlowFormatterTests 2>&1 | tail -40
           test "${PIPESTATUS[0]}" -eq 0
       - name: Package app
         working-directory: mac
-        run: ditto -c -k --keepParent build/Build/Products/Debug/WhisperClaud.app WhisperClaud-macOS.zip
+        run: ditto -c -k --keepParent build/Build/Products/Debug/OpenWispr.app OpenWispr-macOS.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: WhisperClaud-macOS
-          path: mac/WhisperClaud-macOS.zip
+          name: OpenWispr-macOS
+          path: mac/OpenWispr-macOS.zip
