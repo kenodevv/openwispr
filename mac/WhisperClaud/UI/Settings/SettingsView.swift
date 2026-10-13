@@ -5,13 +5,13 @@ import SwiftUI
 struct SettingsView: View {
     var body: some View {
         TabView {
-            GeneralSettingsTab().tabItem { Label("Allgemein", systemImage: "gear") }
-            AISettingsTab().tabItem { Label("Claude", systemImage: "sparkles") }
-            DictionarySettingsTab().tabItem { Label("Wörterbuch", systemImage: "character.book.closed") }
+            GeneralSettingsTab().tabItem { Label("General", systemImage: "gear") }
+            AISettingsTab().tabItem { Label("Cleanup", systemImage: "text.badge.checkmark") }
+            DictionarySettingsTab().tabItem { Label("Dictionary", systemImage: "character.book.closed") }
             SnippetsSettingsTab().tabItem { Label("Snippets", systemImage: "text.badge.plus") }
-            PrivacySettingsTab().tabItem { Label("Datenschutz", systemImage: "lock.shield") }
+            PrivacySettingsTab().tabItem { Label("Privacy", systemImage: "lock.shield") }
         }
-        .frame(width: 560, height: 520)
+        .frame(width: 560, height: 540)
     }
 }
 
@@ -25,49 +25,49 @@ private struct GeneralSettingsTab: View {
     var body: some View {
         @Bindable var settings = settings
         Form {
-            Section("Diktier-Taste") {
-                Toggle("Fn-Taste (🌐) als Diktier-Taste", isOn: $settings.useFnKey)
+            Section("Dictation key") {
+                Toggle("Use the Fn (🌐) key", isOn: $settings.useFnKey)
                     .onChange(of: settings.useFnKey) { _, on in AppContainer.shared.hotkeys.setFnEnabled(on) }
-                Text("Damit macOS beim Fn-Druck nicht das Emoji-Fenster öffnet: Systemeinstellungen → Tastatur → „Beim Drücken der 🌐-Taste“ auf „Nichts tun“ stellen.")
+                Text("So macOS does not open the emoji picker on Fn: System Settings → Keyboard → “Press 🌐 key to” → “Do Nothing”.")
                     .font(.caption).foregroundStyle(.secondary)
-                Picker("Modus", selection: $settings.hotkeyMode) {
+                Picker("Mode", selection: $settings.hotkeyMode) {
                     ForEach(HotkeyMode.allCases) { Text($0.label).tag($0) }
                 }
                 if settings.hotkeyMode == .pushToTalk {
-                    Toggle("Kurzes Antippen startet Freisprechen", isOn: $settings.tapForHandsFree)
+                    Toggle("A quick tap starts hands-free mode", isOn: $settings.tapForHandsFree)
                 }
-                Toggle("Freisprechen automatisch bei Stille beenden", isOn: $settings.handsFreeAutoStop)
+                Toggle("End hands-free recording on silence", isOn: $settings.handsFreeAutoStop)
                 if settings.handsFreeAutoStop {
                     Slider(value: $settings.handsFreeSilenceSeconds, in: 1...5, step: 0.5) {
-                        Text("Stille bis Stopp: \(String(format: "%.1f", settings.handsFreeSilenceSeconds)) s")
+                        Text("Silence before stop: \(String(format: "%.1f", settings.handsFreeSilenceSeconds)) s")
                     }
                 }
-                KeyboardShortcuts.Recorder("Zusätzlicher Shortcut (Diktat):", name: .dictate)
-                KeyboardShortcuts.Recorder("Shortcut Befehlsmodus:", name: .commandMode)
-                Text("Befehlsmodus geht auch mit Ctrl + Fn: Text markieren, halten, Anweisung sprechen.")
+                KeyboardShortcuts.Recorder("Extra shortcut (dictation):", name: .dictate)
+                KeyboardShortcuts.Recorder("Shortcut (command mode):", name: .commandMode)
+                Text("Command mode also works with Ctrl + Fn: select text, hold, say what to do.")
                     .font(.caption).foregroundStyle(.secondary)
             }
-            Section("Audio & Sprache") {
-                Picker("Mikrofon", selection: $settings.inputDeviceUID) {
-                    Text("Systemstandard").tag("")
+            Section("Audio & language") {
+                Picker("Microphone", selection: $settings.inputDeviceUID) {
+                    Text("System default").tag("")
                     ForEach(devices) { Text($0.name).tag($0.uid) }
                 }
-                Picker("Sprache", selection: $settings.language) {
+                Picker("Language", selection: $settings.language) {
                     ForEach(DictationLanguage.allCases) { Text($0.label).tag($0) }
                 }
-                Toggle("Start-/Stopp-Ton", isOn: $settings.playSounds)
+                Toggle("Start/stop sound", isOn: $settings.playSounds)
             }
-            Section("Einfügen & Verhalten") {
-                Picker("Text einfügen", selection: $settings.insertionStrategy) {
+            Section("Behavior") {
+                Picker("Insert text", selection: $settings.insertionStrategy) {
                     ForEach(InsertionStrategy.allCases) { Text($0.label).tag($0) }
                 }
-                Toggle("Schwebende Anzeige (Pill) zeigen", isOn: $settings.showPill)
-                Toggle("Bei Anmeldung starten", isOn: $settings.launchAtLogin)
+                Toggle("Show floating pill", isOn: $settings.showPill)
+                Toggle("Launch at login", isOn: $settings.launchAtLogin)
             }
             Section("Status") {
-                LabeledContent("Sprachmodell", value: state.modelStatus.label)
-                LabeledContent("Hotkeys", value: state.hotkeysActive ? "aktiv" : "inaktiv (Berechtigung fehlt?)")
-                LabeledContent("Berechtigungen", value: permissionSummary)
+                LabeledContent("Speech model", value: state.modelStatus.label)
+                LabeledContent("Hotkeys", value: state.hotkeysActive ? "active" : "inactive (permission missing?)")
+                LabeledContent("Permissions", value: permissionSummary)
             }
         }
         .formStyle(.grouped)
@@ -76,14 +76,11 @@ private struct GeneralSettingsTab: View {
 
     private var permissionSummary: String {
         let p = state.permissions
-        var parts: [String] = []
-        parts.append(p.microphone ? "Mikrofon ✓" : "Mikrofon ✗")
-        parts.append(p.accessibility ? "Bedienungshilfen ✓" : "Bedienungshilfen ✗")
-        return parts.joined(separator: "  ")
+        return "\(p.microphone ? "✓" : "✗") Microphone   \(p.accessibility ? "✓" : "✗") Accessibility"
     }
 }
 
-// MARK: - AI
+// MARK: - Cleanup engine
 
 private struct AISettingsTab: View {
     @Environment(AppSettings.self) private var settings
@@ -96,43 +93,46 @@ private struct AISettingsTab: View {
     var body: some View {
         @Bindable var settings = settings
         Form {
-            Section("Claude-API") {
-                SecureField("API-Key (sk-ant-…)", text: $apiKey)
-                TextField("Workspace-ID (wrkspc_…, nur bei Nutzer-Keys nötig)", text: $workspaceId)
-                HStack {
-                    Button("Speichern") { saveCredentials() }
-                    Button(testing ? "Teste…" : "Verbindung testen") { testConnection() }
-                        .disabled(testing || apiKey.isEmpty)
-                    Spacer()
-                    Text(state.hasAPIKey ? "Key hinterlegt" : "Kein Key").font(.caption).foregroundStyle(.secondary)
-                }
-                if !testResult.isEmpty {
-                    Text(testResult).font(.caption).textSelection(.enabled)
-                }
-                Text("Der Key wird im macOS-Schlüsselbund gespeichert. Audio verlässt den Mac nie, nur der Transkript-Text geht an Claude.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            Section("Formatierung") {
+            Section("Engine") {
                 Picker("Engine", selection: $settings.backend) {
                     ForEach(FormatterBackend.allCases) { Text($0.label).tag($0) }
                 }
-                if settings.backend == .claude {
-                    Picker("Modell", selection: $settings.model) {
+                Toggle("AI cleanup enabled", isOn: $settings.aiEnabled)
+                Toggle("Send app context (app, window title, text before the cursor)", isOn: $settings.contextAwareness)
+                Text("Context lets the engine match the tone: casual in Slack, proper in Mail, prompt-ready in a terminal.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            if settings.backend == .claude {
+                Section("Claude API") {
+                    SecureField("API key (sk-ant-…)", text: $apiKey)
+                    TextField("Workspace ID (wrkspc_…, only for user-scoped keys)", text: $workspaceId)
+                    HStack {
+                        Button("Save") { saveCredentials() }
+                        Button(testing ? "Testing…" : "Test connection") { testConnection() }
+                            .disabled(testing || apiKey.isEmpty)
+                        Spacer()
+                        Text(state.hasAPIKey ? "Key stored" : "No key").font(.caption).foregroundStyle(.secondary)
+                    }
+                    if !testResult.isEmpty {
+                        Text(testResult).font(.caption).textSelection(.enabled)
+                    }
+                    Picker("Model", selection: $settings.model) {
                         ForEach(ClaudeModel.allCases) { Text($0.label).tag($0) }
                     }
-                    Picker("Denkaufwand (Effort)", selection: $settings.effort) {
+                    Picker("Effort", selection: $settings.effort) {
                         ForEach(Effort.allCases) { Text($0.label).tag($0) }
                     }
-                }
-                if settings.backend == .ollama {
-                    TextField("Ollama-URL", text: $settings.ollamaURL)
-                    TextField("Ollama-Modell (z. B. qwen3:4b, llama3.2:3b)", text: $settings.ollamaModel)
-                    Text("Ollama installieren: brew install ollama, dann „ollama pull qwen3:4b“. Läuft komplett lokal und kostenlos.")
+                    Text("The key is stored in the macOS Keychain. Audio never leaves your Mac; only the transcript text is sent.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
-                Toggle("App-Kontext mitsenden (App, Fenstertitel, Text vor dem Cursor)", isOn: $settings.contextAwareness)
-                Text("Kontext hilft Claude, den Ton zu treffen: locker in Slack, sachlich in Mail, roh im Terminal.")
-                    .font(.caption).foregroundStyle(.secondary)
+            }
+            if settings.backend == .ollama {
+                Section("Ollama (local, free)") {
+                    TextField("Ollama URL", text: $settings.ollamaURL)
+                    TextField("Model (e.g. qwen3:4b, llama3.2:3b)", text: $settings.ollamaModel)
+                    Text("Install with `brew install ollama`, then `ollama pull qwen3:4b`. Runs entirely on this Mac.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
             }
         }
         .formStyle(.grouped)
@@ -146,13 +146,13 @@ private struct AISettingsTab: View {
         Keychain.write(apiKey, account: Keychain.apiKeyAccount)
         Keychain.write(workspaceId, account: Keychain.workspaceAccount)
         state.refreshCredentials()
-        testResult = "Gespeichert."
+        testResult = "Saved."
     }
 
     private func testConnection() {
         saveCredentials()
         guard let credentials = ClaudeCredentials.fromKeychain() else {
-            testResult = "Kein Key gespeichert."
+            testResult = "No key stored."
             return
         }
         testing = true
@@ -163,9 +163,9 @@ private struct AISettingsTab: View {
             do {
                 let result = try await AppContainer.shared.claude.complete(
                     systemStatic: FlowPrompts.dictationSystem, systemDynamic: "",
-                    user: FlowPrompts.dictationUser(transcript: "ähm das ist ein test"),
+                    user: FlowPrompts.dictationUser(transcript: "um this is a test"),
                     model: model, effort: effort, maxTokens: 64, credentials: credentials)
-                testResult = "✓ \(result.model) · \(result.latencyMs) ms · Antwort: „\(result.text)“ · Cache-Read \(result.cacheReadTokens) Tokens"
+                testResult = "✓ \(result.model) · \(result.latencyMs) ms · reply: “\(result.text)” · cache read \(result.cacheReadTokens) tokens"
             } catch {
                 testResult = "✗ \(error.localizedDescription)"
             }
@@ -183,12 +183,12 @@ private struct DictionarySettingsTab: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Namen, Produkte und Fachbegriffe, die Claude exakt so schreiben soll. Optional: typische Fehl-Transkriptionen, die automatisch ersetzt werden.")
+            Text("Names, products and jargon to spell exactly. Optionally add how they are usually misheard; those get replaced automatically.")
                 .font(.caption).foregroundStyle(.secondary)
             HStack {
-                TextField("Neuer Begriff, z. B. ShiftProxies", text: $newTerm)
+                TextField("New term, e.g. ShiftProxies", text: $newTerm)
                     .onSubmit(add)
-                Button("Hinzufügen", action: add).disabled(newTerm.trimmingCharacters(in: .whitespaces).isEmpty)
+                Button("Add", action: add).disabled(newTerm.trimmingCharacters(in: .whitespaces).isEmpty)
             }
             List {
                 ForEach(terms) { term in
@@ -199,7 +199,7 @@ private struct DictionarySettingsTab: View {
                 }
             }
             if terms.isEmpty {
-                Text("Noch keine Einträge.").font(.caption).foregroundStyle(.secondary)
+                Text("No entries yet.").font(.caption).foregroundStyle(.secondary)
             }
         }
         .padding()
@@ -226,8 +226,8 @@ private struct DictionaryRow: View {
 
     var body: some View {
         HStack {
-            TextField("Begriff", text: $term.term).frame(width: 160)
-            TextField("Wird oft verstanden als … (kommagetrennt)", text: misspellingsBinding)
+            TextField("Term", text: $term.term).frame(width: 160)
+            TextField("Often misheard as … (comma-separated)", text: misspellingsBinding)
             Button(role: .destructive, action: onDelete) { Image(systemName: "minus.circle") }.buttonStyle(.borderless)
         }
     }
@@ -243,16 +243,16 @@ private struct SnippetsSettingsTab: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Sprich den Auslöser, der gespeicherte Text wird eingefügt. Beispiel: „meine Signatur“ → Grußformel mit Kontaktdaten.")
+            Text("Say the trigger and the stored text is inserted. Example: “my signature” → sign-off with contact details.")
                 .font(.caption).foregroundStyle(.secondary)
-            TextField("Auslöser (gesprochen)", text: $trigger)
+            TextField("Trigger (spoken)", text: $trigger)
             TextEditor(text: $content)
                 .font(.body)
                 .frame(height: 80)
                 .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.secondary.opacity(0.3)))
             HStack {
                 Spacer()
-                Button("Snippet speichern", action: add)
+                Button("Save snippet", action: add)
                     .disabled(trigger.trimmingCharacters(in: .whitespaces).isEmpty || content.trimmingCharacters(in: .whitespaces).isEmpty)
             }
             List {
@@ -292,15 +292,15 @@ private struct PrivacySettingsTab: View {
     var body: some View {
         @Bindable var settings = settings
         Form {
-            Section("Verlauf") {
-                Toggle("Privatsphäre-Modus: keine Diktate speichern", isOn: $settings.privacyMode)
-                Button("Gesamten Verlauf löschen…", role: .destructive) { confirmClear = true }
-                    .confirmationDialog("Verlauf wirklich löschen?", isPresented: $confirmClear) {
-                        Button("Löschen", role: .destructive) { AppContainer.shared.store.clearHistory() }
+            Section("History") {
+                Toggle("Privacy mode: do not store dictations", isOn: $settings.privacyMode)
+                Button("Delete entire history…", role: .destructive) { confirmClear = true }
+                    .confirmationDialog("Delete the entire history?", isPresented: $confirmClear) {
+                        Button("Delete", role: .destructive) { AppContainer.shared.store.clearHistory() }
                     }
             }
-            Section("Datenfluss") {
-                Text("• Audio wird lokal mit Parakeet (Core ML) transkribiert und nie hochgeladen.\n• Nur das Transkript plus App-Name, Fenstertitel und bis zu 500 Zeichen vor dem Cursor gehen an die Claude-API.\n• Passwortfelder werden erkannt und nicht diktiert.\n• Der Verlauf liegt in einer lokalen SwiftData-Datenbank in ~/Library/Application Support.")
+            Section("Data flow") {
+                Text("• Audio is transcribed locally with Parakeet (Core ML) and never uploaded.\n• Only the transcript plus app name, window title and up to 500 characters before the cursor are sent to Claude or Ollama.\n• Password fields are detected and skipped.\n• History lives in a local SwiftData database under ~/Library/Application Support.")
                     .font(.callout)
             }
         }

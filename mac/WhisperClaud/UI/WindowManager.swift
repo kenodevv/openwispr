@@ -18,7 +18,7 @@ final class WindowManager {
                 .environment(container.state)
                 .environment(container.settings)
                 .modelContainer(container.store.container)
-            history = makeWindow(title: "Verlauf", size: NSSize(width: 960, height: 620), root: view)
+            history = makeWindow(title: "History", size: NSSize(width: 960, height: 620), root: view)
         }
         bringFront(history)
     }
@@ -28,7 +28,7 @@ final class WindowManager {
             let view = OnboardingView(onFinish: { [weak self] in self?.onboarding?.close() })
                 .environment(container.state)
                 .environment(container.settings)
-            onboarding = makeWindow(title: "WhisperClaud einrichten", size: NSSize(width: 640, height: 560), root: view)
+            onboarding = makeWindow(title: "Set up WhisperClaud", size: NSSize(width: 640, height: 560), root: view)
             onboarding?.styleMask.remove(.resizable)
         }
         bringFront(onboarding)

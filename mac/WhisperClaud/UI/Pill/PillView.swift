@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The floating capsule at the bottom of the screen (Wispr-Flow style).
+/// The floating capsule at the bottom of the screen. Monochrome: everything is white on black.
 struct PillView: View {
     let state: AppState
 
@@ -23,30 +23,30 @@ struct PillView: View {
     private var content: some View {
         switch state.pipeline {
         case .recording(let mode, let handsFree):
-            RecordingDot(color: mode == .command ? .purple : .red)
-            WaveformView(levels: state.levels, tint: mode == .command ? .purple : .white)
+            RecordingDot()
+            WaveformView(levels: state.levels)
             if mode == .command {
-                Text("Befehl").foregroundStyle(.purple)
+                Text("Command")
             } else if handsFree {
-                Text("Freisprechen").foregroundStyle(.white.opacity(0.7))
+                Text("Hands-free").opacity(0.7)
             }
         case .transcribing:
             ProgressView().controlSize(.small).tint(.white)
-            Text("Transkribiere…")
+            Text("Transcribing…")
         case .formatting:
-            Image(systemName: "sparkles").foregroundStyle(.yellow)
-            Text("Formatiere…")
+            ProgressView().controlSize(.small).tint(.white)
+            Text("Formatting…")
         case .inserting:
-            Image(systemName: "text.cursor")
-            Text("Füge ein…")
+            ProgressView().controlSize(.small).tint(.white)
+            Text("Inserting…")
         case .done(let preview):
-            Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-            Text(preview.isEmpty ? "Fertig" : preview).lineLimit(1).frame(maxWidth: 360)
+            Image(systemName: "checkmark.circle")
+            Text(preview.isEmpty ? "Done" : preview).lineLimit(1).frame(maxWidth: 360)
         case .notice(let message):
-            Image(systemName: "info.circle").foregroundStyle(.white.opacity(0.8))
-            Text(message).lineLimit(1)
+            Image(systemName: "info.circle")
+            Text(message).lineLimit(1).frame(maxWidth: 420)
         case .error(let message):
-            Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.yellow)
+            Image(systemName: "exclamationmark.circle")
             Text(message).lineLimit(1).frame(maxWidth: 420)
         case .idle:
             EmptyView()
@@ -55,15 +55,14 @@ struct PillView: View {
 }
 
 private struct RecordingDot: View {
-    let color: Color
     @State private var pulse = false
 
     var body: some View {
         Circle()
-            .fill(color)
+            .fill(.white)
             .frame(width: 9, height: 9)
             .scaleEffect(pulse ? 1.25 : 0.9)
-            .opacity(pulse ? 1 : 0.6)
+            .opacity(pulse ? 1 : 0.55)
             .onAppear {
                 withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) { pulse = true }
             }

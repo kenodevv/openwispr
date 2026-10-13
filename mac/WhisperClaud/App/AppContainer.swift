@@ -34,7 +34,7 @@ final class AppContainer {
         state.refreshPermissions()
         Keychain.importPendingCredentials()
         state.refreshCredentials()
-        state.event("Start: Mikrofon \(state.permissions.microphone ? "ja" : "nein"), Bedienungshilfen \(state.permissions.accessibility ? "ja" : "nein"), Eingabeüberwachung \(state.permissions.inputMonitoring ? "ja" : "nein"), API-Key \(state.hasAPIKey ? "ja" : "nein")")
+        state.event("Start: microphone \(state.permissions.microphone ? "yes" : "no"), accessibility \(state.permissions.accessibility ? "yes" : "no"), API key \(state.hasAPIKey ? "yes" : "no")")
         pill.start()
 
         hotkeys.onPress = { [weak self] mode in self?.pipeline.hotkeyPressed(mode) }
@@ -60,7 +60,7 @@ final class AppContainer {
                 let gainedPermission = !self.lastPermissions.accessibility && self.state.permissions.accessibility
                 self.lastPermissions = self.state.permissions
                 if gainedPermission {
-                    self.state.event("Berechtigung erteilt – Fn-Überwachung wird neu gestartet")
+                    self.state.event("Permission granted – restarting Fn monitoring")
                     self.hotkeys.setFnEnabled(false)
                 }
                 if self.settings.onboardingCompleted, self.state.permissions.accessibility,
@@ -84,11 +84,11 @@ final class AppContainer {
                     }
                 }
                 state.modelStatus = .ready
-                state.event("Sprachmodell bereit")
+                state.event("Speech model ready")
                 logger.notice("ASR model ready")
             } catch {
                 state.modelStatus = .failed(error.localizedDescription)
-                state.lastError = "Sprachmodell: \(error.localizedDescription)"
+                state.lastError = "Speech model: \(error.localizedDescription)"
                 logger.error("ASR model failed: \(error.localizedDescription)")
             }
         }
@@ -110,13 +110,13 @@ final class AppContainer {
         state.hotkeysActive = hotkeys.isActive && (!settings.useFnKey || hotkeys.fnActive)
         if wasActive && state.hotkeysActive && hotkeysAnnounced { return }
         if settings.useFnKey, !hotkeys.fnActive {
-            state.lastError = hotkeys.fnFailure ?? "Fn-Tap konnte nicht erstellt werden"
+            state.lastError = hotkeys.fnFailure ?? "Fn event tap could not be created"
             logger.error("Fn event tap could not be created: \(self.hotkeys.fnFailure ?? "unknown")")
         } else {
-            if state.lastError?.hasPrefix("Fn-Tap") == true { state.lastError = nil }
+            if state.lastError?.hasPrefix("Fn event tap") == true { state.lastError = nil }
             if !state.hotkeysActive || !hotkeysAnnounced {
                 hotkeysAnnounced = true
-                state.event("Hotkeys aktiv (Fn: \(hotkeys.fnActive ? "ja" : "aus"))")
+                state.event("Hotkeys active (Fn: \(hotkeys.fnActive ? "yes" : "off"))")
                 logger.notice("hotkeys active, fn=\(self.hotkeys.fnActive)")
             }
         }

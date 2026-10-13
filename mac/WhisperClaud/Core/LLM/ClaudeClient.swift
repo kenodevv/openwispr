@@ -31,13 +31,13 @@ enum ClaudeError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .missingKey: return "Kein Claude-API-Key hinterlegt."
-        case .unauthorized(let m): return "API-Key abgelehnt: \(m)"
-        case .rateLimited: return "Rate-Limit erreicht, bitte kurz warten."
-        case .server(let code, let m): return "Claude-API Fehler \(code): \(m)"
-        case .network(let m): return "Keine Verbindung: \(m)"
-        case .badResponse: return "Unerwartete Antwort der Claude-API."
-        case .refused(let m): return "Claude hat abgelehnt: \(m)"
+        case .missingKey: return "No Claude API key stored."
+        case .unauthorized(let m): return "API key rejected: \(m)"
+        case .rateLimited: return "Rate limit hit, please wait a moment."
+        case .server(let code, let m): return "Claude API error \(code): \(m)"
+        case .network(let m): return "No connection: \(m)"
+        case .badResponse: return "Unexpected response from the Claude API."
+        case .refused(let m): return "Claude declined: \(m)"
         }
     }
 }
@@ -120,7 +120,7 @@ actor ClaudeClient {
         guard let body = try? JSONDecoder().decode(ResponseBody.self, from: data) else { throw ClaudeError.badResponse }
         let stop = body.stop_reason ?? "end_turn"
         if stop == "refusal" {
-            throw ClaudeError.refused(body.stop_details?.explanation ?? body.stop_details?.category ?? "Sicherheitsfilter")
+            throw ClaudeError.refused(body.stop_details?.explanation ?? body.stop_details?.category ?? "safety filter")
         }
         let text = body.content.compactMap { $0.type == "text" ? $0.text : nil }.joined()
         return ClaudeResult(
@@ -135,7 +135,7 @@ actor ClaudeClient {
 
     private func errorMessage(_ data: Data) -> String {
         if let body = try? JSONDecoder().decode(ErrorBody.self, from: data) { return body.error.message }
-        return String(data: data, encoding: .utf8)?.prefix(200).description ?? "unbekannt"
+        return String(data: data, encoding: .utf8)?.prefix(200).description ?? "unknown"
     }
 
     // MARK: - Wire types (property names are the JSON keys)

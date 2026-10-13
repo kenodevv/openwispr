@@ -47,7 +47,7 @@ targets:
         CFBundleIconFile: ""
         LSUIElement: true
         LSMinimumSystemVersion: "15.0"
-        NSMicrophoneUsageDescription: "WhisperClaud nimmt deine Stimme auf und wandelt sie lokal auf dem Mac in Text um."
+        NSMicrophoneUsageDescription: "WhisperClaud records your voice and turns it into text locally on this Mac."
         NSHumanReadableCopyright: ""
     settings:
       base:

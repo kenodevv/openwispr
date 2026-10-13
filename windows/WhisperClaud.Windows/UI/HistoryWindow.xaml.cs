@@ -41,7 +41,7 @@ public partial class HistoryWindow : Window
     {
         if (List.SelectedItem is not DictationEntry entry) { Detail.Visibility = Visibility.Collapsed; return; }
         Detail.Visibility = Visibility.Visible;
-        DetailMeta.Text = $"{entry.AppName} · {entry.Date:dd.MM.yyyy HH:mm} · {entry.AudioSeconds:F1} s Audio · {entry.LatencyMs} ms · {entry.Model}";
+        DetailMeta.Text = $"{entry.AppName} · {entry.Date:dd.MM.yyyy HH:mm} · {entry.AudioSeconds:F1} s audio · {entry.LatencyMs} ms · {entry.Model}";
         DetailFinal.Text = entry.FinalText;
         DetailRaw.Text = entry.RawTranscript;
     }

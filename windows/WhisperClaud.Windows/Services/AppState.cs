@@ -62,11 +62,11 @@ public sealed class AppState : INotifyPropertyChanged
 
     public string ModelLabel => ModelPhase switch
     {
-        ModelPhase.Idle => "nicht geladen",
-        ModelPhase.Downloading => $"lädt {(int)(ModelProgress * 100)} %",
-        ModelPhase.Loading => "initialisiert",
-        ModelPhase.Ready => "bereit",
-        _ => $"Fehler: {ModelError}",
+        ModelPhase.Idle => "not loaded",
+        ModelPhase.Downloading => $"downloading {(int)(ModelProgress * 100)} %",
+        ModelPhase.Loading => "initializing",
+        ModelPhase.Ready => "ready",
+        _ => $"error: {ModelError}",
     };
 
     public void SetPhase(PipelinePhase phase, string message = "")

@@ -43,7 +43,7 @@ public sealed class ParakeetEngine
 
     public async Task<string> TranscribeAsync(float[] samples, DictationLanguage language)
     {
-        var recognizer = _recognizer ?? throw new InvalidOperationException("Sprachmodell noch nicht geladen.");
+        var recognizer = _recognizer ?? throw new InvalidOperationException("Speech model not loaded yet.");
         await _gate.WaitAsync();
         try
         {

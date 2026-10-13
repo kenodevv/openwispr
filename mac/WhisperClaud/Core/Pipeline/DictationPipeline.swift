@@ -43,7 +43,7 @@ final class DictationPipeline {
 
     func hotkeyPressed(_ requested: DictationMode) {
         logger.notice("hotkey down mode=\(requested.rawValue) state=\(String(describing: self.state.pipeline))")
-        state.event(requested == .command ? "Ctrl+Fn erkannt" : "Fn erkannt")
+        state.event(requested == .command ? "Ctrl+Fn pressed" : "Fn pressed")
         if state.pipeline.isRecording {
             stop()
             return
@@ -97,7 +97,7 @@ final class DictationPipeline {
 
     private func start(_ requested: DictationMode) {
         guard state.modelStatus == .ready else {
-            show(.notice("Sprachmodell lädt noch (\(state.modelStatus.label))"))
+            show(.notice("Speech model still loading (\(state.modelStatus.label))"))
             return
         }
         mode = requested
@@ -105,9 +105,9 @@ final class DictationPipeline {
         do {
             try recorder.start(deviceUID: settings.inputDeviceUID, silenceTimeout: autoStop)
         } catch {
-            state.lastError = "Mikrofon: \(error.localizedDescription)"
+            state.lastError = "Microphone: \(error.localizedDescription)"
             logger.error("recorder start failed: \(error.localizedDescription)")
-            show(.error("Mikrofon: \(error.localizedDescription)"))
+            show(.error("Microphone: \(error.localizedDescription)"))
             return
         }
         state.resetLevels()
@@ -118,10 +118,10 @@ final class DictationPipeline {
         if context.isSecureField {
             _ = recorder.stop()
             state.resetLevels()
-            show(.notice("Passwortfeld – Diktat deaktiviert"))
+            show(.notice("Password field – dictation disabled"))
             return
         }
-        state.event("Aufnahme läuft (\(context.appName.isEmpty ? "unbekannte App" : context.appName))")
+        state.event("Recording (\(context.appName.isEmpty ? "unknown app" : context.appName))")
         logger.notice("recording started app=\(self.context.bundleId) category=\(self.context.category.rawValue)")
     }
 
@@ -135,7 +135,7 @@ final class DictationPipeline {
         SoundFeedback.stop()
         state.resetLevels()
         let seconds = Double(samples.count) / 16_000
-        state.event(String(format: "Aufnahme beendet, %.1f s, Pegel %.3f, Sprache %@", seconds, recorder.peakLevel, recorder.speechWasDetected ? "ja" : "nein"))
+        state.event(String(format: "Recording stopped, %.1f s, peak %.3f, speech %@", seconds, recorder.peakLevel, recorder.speechWasDetected ? "yes" : "no"))
         logger.notice("recording stopped seconds=\(seconds) speech=\(self.recorder.speechWasDetected)")
         Task { await process(samples, audioSeconds: seconds) }
     }
@@ -154,19 +154,19 @@ final class DictationPipeline {
         do {
             raw = try await engine.transcribe(samples, language: settings.language)
         } catch {
-            state.lastError = "Transkription: \(error.localizedDescription)"
+            state.lastError = "Transcription: \(error.localizedDescription)"
             logger.error("transcription failed: \(error.localizedDescription)")
-            show(.error("Transkription fehlgeschlagen: \(error.localizedDescription)"))
+            show(.error("Transcription failed: \(error.localizedDescription)"))
             return
         }
         let transcribeMs = elapsedMs(since: started)
         logger.notice("transcribed in \(transcribeMs)ms: \(raw, privacy: .public)")
         guard !raw.isEmpty else {
-            state.event(recorder.speechWasDetected ? "Leeres Transkript trotz Pegel" : "Nichts gehört (Pegel zu niedrig – Mikrofon?)")
-            show(.notice(recorder.speechWasDetected ? "Nichts verstanden" : "Nichts gehört – Mikrofon in den Einstellungen prüfen"))
+            state.event(recorder.speechWasDetected ? "Empty transcript despite audio level" : "Nothing heard (level too low – microphone?)")
+            show(.notice(recorder.speechWasDetected ? "Nothing understood" : "Nothing heard – check the microphone in Settings"))
             return
         }
-        state.event("Transkript: \(raw.prefix(60))")
+        state.event("Transcript: \(raw.prefix(60))")
 
         let dictionary = store.dictionaryHints()
         let snippets = store.snippetDefs()
@@ -210,18 +210,18 @@ final class DictationPipeline {
                 finalText = FlowFormatter.expandSnippetsDirectly(FlowFormatter.rawCleanup(raw, dictionary: dictionary), snippets: snippets)
             }
             claudeMs = elapsedMs(since: claudeStart)
-            if aiFailure == nil { state.event("\(settings.backend == .ollama ? "Ollama" : "Claude") fertig (\(claudeMs) ms)") }
+            if aiFailure == nil { state.event("\(settings.backend == .ollama ? "Ollama" : "Claude") done (\(claudeMs) ms)") }
         } else {
-            state.event(!useLLM ? "Nur Regeln – Rohtext bereinigt" : "Kein API-Key – Rohtext")
+            state.event(!useLLM ? "Rules only – raw text cleaned" : "No API key – raw text")
             if mode == .command {
-                show(.error("Befehlsmodus braucht die KI-Formatierung und einen API-Key"))
+                show(.error("Command mode needs Claude or Ollama"))
                 return
             }
             finalText = FlowFormatter.expandSnippetsDirectly(FlowFormatter.rawCleanup(raw, dictionary: dictionary), snippets: snippets)
         }
 
         guard !finalText.isEmpty else {
-            show(.notice("Nichts zu schreiben"))
+            show(.notice("Nothing to write"))
             return
         }
         if mode == .dictation {
@@ -230,7 +230,7 @@ final class DictationPipeline {
 
         state.pipeline = .inserting
         await TextInserter.insert(finalText, strategy: settings.insertionStrategy)
-        state.event("Eingefügt: \(finalText.prefix(60))")
+        state.event("Inserted: \(finalText.prefix(60))")
 
         let totalMs = elapsedMs(since: started)
         state.lastText = finalText
@@ -243,7 +243,7 @@ final class DictationPipeline {
         logger.notice("latency transcribe=\(transcribeMs)ms claude=\(claudeMs)ms total=\(totalMs)ms audio=\(String(format: "%.1f", audioSeconds))s")
 
         if let aiFailure {
-            show(.error("Rohtext eingefügt – \(aiFailure)"), duration: 3)
+            show(.error("Raw text inserted – \(aiFailure)"), duration: 3)
         } else {
             let preview = finalText.replacingOccurrences(of: "\n", with: " ")
             show(.done(String(preview.prefix(60))), duration: 1.4)

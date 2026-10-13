@@ -35,7 +35,7 @@ final class FnKeyMonitor {
         ) else {
             let ax = AXIsProcessTrusted()
             let listen = CGPreflightListenEventAccess()
-            lastFailure = "Fn-Tap konnte nicht erstellt werden (Bedienungshilfen: \(ax ? "ja" : "nein"), Eingabeüberwachung: \(listen ? "ja" : "nein"))"
+            lastFailure = "Fn event tap could not be created (accessibility: \(ax ? "yes" : "no"), input monitoring: \(listen ? "yes" : "no"))"
             return false
         }
         lastFailure = nil

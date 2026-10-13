@@ -30,7 +30,7 @@ public sealed class DictationPipeline
 
     public void HotkeyPressed(DictationMode requested)
     {
-        _state.Event(requested == DictationMode.Command ? "Hotkey + Shift erkannt" : "Hotkey erkannt");
+        _state.Event(requested == DictationMode.Command ? "Hotkey + Shift pressed" : "Hotkey pressed");
         if (_state.IsRecording) { Stop(); return; }
         if (_state.IsBusy) return;
         _pressedAt = DateTime.UtcNow;
@@ -69,7 +69,7 @@ public sealed class DictationPipeline
     {
         if (_state.ModelPhase != ModelPhase.Ready)
         {
-            Show(PipelinePhase.Notice, $"Sprachmodell lädt noch ({_state.ModelLabel})");
+            Show(PipelinePhase.Notice, $"Speech model still loading ({_state.ModelLabel})");
             return;
         }
         _mode = requested;
@@ -77,8 +77,8 @@ public sealed class DictationPipeline
         try { _recorder.Start(_settings.InputDeviceNumber, autoStop); }
         catch (Exception e)
         {
-            _state.LastError = "Mikrofon: " + e.Message;
-            Show(PipelinePhase.Error, "Mikrofon: " + e.Message);
+            _state.LastError = "Microphone: " + e.Message;
+            Show(PipelinePhase.Error, "Microphone: " + e.Message);
             return;
         }
         _state.ResetLevels();
@@ -91,10 +91,10 @@ public sealed class DictationPipeline
         {
             _recorder.Stop();
             _state.ResetLevels();
-            Show(PipelinePhase.Notice, "Passwortfeld – Diktat deaktiviert");
+            Show(PipelinePhase.Notice, "Password field – dictation disabled");
             return;
         }
-        _state.Event($"Aufnahme läuft ({(_context.AppName.Length == 0 ? "unbekannte App" : _context.AppName)})");
+        _state.Event($"Recording ({(_context.AppName.Length == 0 ? "unknown app" : _context.AppName)})");
     }
 
     private void Stop()
@@ -103,7 +103,7 @@ public sealed class DictationPipeline
         if (_settings.PlaySounds) SystemSounds.Hand.Play();
         _state.ResetLevels();
         var seconds = samples.Length / 16000.0;
-        _state.Event($"Aufnahme beendet, {seconds:F1} s, Pegel {_recorder.PeakLevel:F3}, Sprache {(_recorder.SpeechWasDetected ? "ja" : "nein")}");
+        _state.Event($"Recording stopped, {seconds:F1} s, peak {_recorder.PeakLevel:F3}, speech {(_recorder.SpeechWasDetected ? "yes" : "no")}");
         _ = ProcessAsync(samples, seconds);
     }
 
@@ -116,18 +116,18 @@ public sealed class DictationPipeline
         try { raw = await _engine.TranscribeAsync(samples, _settings.Language); }
         catch (Exception e)
         {
-            _state.LastError = "Transkription: " + e.Message;
-            Show(PipelinePhase.Error, "Transkription fehlgeschlagen: " + e.Message);
+            _state.LastError = "Transcription: " + e.Message;
+            Show(PipelinePhase.Error, "Transcription failed: " + e.Message);
             return;
         }
         var transcribeMs = Elapsed(started);
         if (raw.Length == 0)
         {
-            _state.Event(_recorder.SpeechWasDetected ? "Leeres Transkript trotz Pegel" : "Nichts gehört (Pegel zu niedrig – Mikrofon?)");
-            Show(PipelinePhase.Notice, _recorder.SpeechWasDetected ? "Nichts verstanden" : "Nichts gehört – Mikrofon in den Einstellungen prüfen");
+            _state.Event(_recorder.SpeechWasDetected ? "Empty transcript despite audio level" : "Nothing heard (level too low – microphone?)");
+            Show(PipelinePhase.Notice, _recorder.SpeechWasDetected ? "Nothing understood" : "Nothing heard – check the microphone in Settings");
             return;
         }
-        _state.Event($"Transkript: {Truncate(raw, 60)}");
+        _state.Event($"Transcript: {Truncate(raw, 60)}");
 
         var dictionary = _store.DictionaryHints();
         var snippets = _store.Snippets;
@@ -162,27 +162,27 @@ public sealed class DictationPipeline
             }
             catch (Exception e)
             {
-                _state.LastError = "Formatierung: " + e.Message;
+                _state.LastError = "Cleanup: " + e.Message;
                 if (_mode == DictationMode.Command) { Show(PipelinePhase.Error, e.Message); return; }
                 aiFailure = e.Message;
                 finalText = FlowFormatter.ExpandSnippetsDirectly(FlowFormatter.RawCleanup(raw, dictionary), snippets);
             }
             llmMs = Elapsed(llmStart);
-            if (aiFailure is null) _state.Event($"{(_settings.Backend == FormatterBackend.Ollama ? "Ollama" : "Claude")} fertig ({llmMs} ms)");
+            if (aiFailure is null) _state.Event($"{(_settings.Backend == FormatterBackend.Ollama ? "Ollama" : "Claude")} done ({llmMs} ms)");
         }
         else
         {
-            if (_mode == DictationMode.Command) { Show(PipelinePhase.Error, "Befehlsmodus braucht Claude oder Ollama"); return; }
+            if (_mode == DictationMode.Command) { Show(PipelinePhase.Error, "Command mode needs Claude or Ollama"); return; }
             finalText = FlowFormatter.ExpandSnippetsDirectly(FlowFormatter.RawCleanup(raw, dictionary), snippets);
-            _state.Event(_settings.Backend == FormatterBackend.RulesOnly ? "Nur Regeln – Rohtext bereinigt" : "Kein API-Key – Rohtext");
+            _state.Event(_settings.Backend == FormatterBackend.RulesOnly ? "Rules only – raw text cleaned" : "No API key – raw text");
         }
 
-        if (finalText.Length == 0) { Show(PipelinePhase.Notice, "Nichts zu schreiben"); return; }
+        if (finalText.Length == 0) { Show(PipelinePhase.Notice, "Nothing to write"); return; }
         if (_mode == DictationMode.Dictation) finalText = FlowFormatter.WithSmartSpacing(finalText, _context.TextBeforeCursor);
 
         _state.SetPhase(PipelinePhase.Inserting);
         await TextInserter.PasteAsync(finalText);
-        _state.Event($"Eingefügt: {Truncate(finalText, 60)}");
+        _state.Event($"Inserted: {Truncate(finalText, 60)}");
 
         var totalMs = Elapsed(started);
         _state.LastText = finalText;
@@ -192,7 +192,7 @@ public sealed class DictationPipeline
                 Mode = _mode.ToString().ToLowerInvariant(), AudioSeconds = audioSeconds, LatencyMs = totalMs, Model = modelUsed });
         FileLog.Write($"latency transcribe={transcribeMs}ms llm={llmMs}ms total={totalMs}ms audio={audioSeconds:F1}s");
 
-        if (aiFailure is not null) Show(PipelinePhase.Error, "Rohtext eingefügt – " + aiFailure, 3);
+        if (aiFailure is not null) Show(PipelinePhase.Error, "Raw text inserted – " + aiFailure, 3);
         else Show(PipelinePhase.Done, Truncate(finalText.Replace('\n', ' '), 60), 1.4);
     }
 

@@ -13,7 +13,7 @@ actor OllamaClient {
     func complete(systemStatic: String, systemDynamic: String, user: String,
                   baseURL: String, model: String, maxTokens: Int = 2048) async throws -> ClaudeResult {
         guard let url = URL(string: baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/")) + "/api/chat") else {
-            throw ClaudeError.server(0, "Ungültige Ollama-URL")
+            throw ClaudeError.server(0, "Invalid Ollama URL")
         }
         let system = systemDynamic.isEmpty ? systemStatic : systemStatic + "\n\n" + systemDynamic
         let body: [String: Any] = [
@@ -33,11 +33,11 @@ actor OllamaClient {
         do {
             (data, response) = try await session.data(for: request)
         } catch {
-            throw ClaudeError.network("Ollama nicht erreichbar (\(baseURL)): \(error.localizedDescription)")
+            throw ClaudeError.network("Ollama unreachable (\(baseURL)): \(error.localizedDescription)")
         }
         guard let http = response as? HTTPURLResponse else { throw ClaudeError.badResponse }
         guard http.statusCode == 200 else {
-            throw ClaudeError.server(http.statusCode, String(data: data, encoding: .utf8)?.prefix(200).description ?? "Ollama-Fehler")
+            throw ClaudeError.server(http.statusCode, String(data: data, encoding: .utf8)?.prefix(200).description ?? "Ollama error")
         }
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let message = json["message"] as? [String: Any],

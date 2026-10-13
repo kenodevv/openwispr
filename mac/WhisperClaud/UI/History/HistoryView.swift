@@ -31,9 +31,9 @@ struct HistoryView: View {
                         HStack(spacing: 6) {
                             Text(entry.date, format: .dateTime.day().month().hour().minute())
                             Text("·")
-                            Text(entry.appName.isEmpty ? "Unbekannte App" : entry.appName)
+                            Text(entry.appName.isEmpty ? "Unknown app" : entry.appName)
                             if entry.mode == DictationMode.command.rawValue {
-                                Text("· Befehl").foregroundStyle(.purple)
+                                Text("· command")
                             }
                         }
                         .font(.caption)
@@ -43,7 +43,7 @@ struct HistoryView: View {
                     .tag(entry.id)
                 }
                 .frame(minWidth: 320)
-                .searchable(text: $search, placement: .sidebar, prompt: "Suchen")
+                .searchable(text: $search, placement: .sidebar, prompt: "Search")
 
                 Group {
                     if let entry = selectedEntry {
@@ -53,8 +53,8 @@ struct HistoryView: View {
                             selection = nil
                         })
                     } else {
-                        ContentUnavailableView("Kein Eintrag ausgewählt", systemImage: "text.quote",
-                                               description: Text(entries.isEmpty ? "Noch keine Diktate. Halte Fn und sprich." : "Wähle links ein Diktat aus."))
+                        ContentUnavailableView("Nothing selected", systemImage: "text.quote",
+                                               description: Text(entries.isEmpty ? "No dictations yet. Hold Fn and speak." : "Pick a dictation on the left."))
                     }
                 }
                 .frame(minWidth: 380, maxWidth: .infinity, maxHeight: .infinity)
@@ -69,10 +69,10 @@ struct StatsView: View {
 
     var body: some View {
         HStack(spacing: 28) {
-            stat("Diktate", "\(stats.dictations)")
-            stat("Wörter", "\(stats.words)")
-            stat("Ø Wörter/Min", String(format: "%.0f", stats.averageWPM))
-            stat("Gesparte Zeit", formattedMinutes(stats.minutesSaved))
+            stat("Dictations", "\(stats.dictations)")
+            stat("Words", "\(stats.words)")
+            stat("Avg words/min", String(format: "%.0f", stats.averageWPM))
+            stat("Time saved", formattedMinutes(stats.minutesSaved))
             Spacer()
         }
     }
@@ -99,15 +99,15 @@ private struct EntryDetailView: View {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(entry.appName.isEmpty ? "Unbekannte App" : entry.appName).font(.headline)
-                        Text("\(entry.date.formatted(date: .abbreviated, time: .shortened)) · \(String(format: "%.1f", entry.audioSeconds)) s Audio · \(entry.latencyMs) ms · \(entry.model)")
+                        Text(entry.appName.isEmpty ? "Unknown app" : entry.appName).font(.headline)
+                        Text("\(entry.date.formatted(date: .abbreviated, time: .shortened)) · \(String(format: "%.1f", entry.audioSeconds)) s audio · \(entry.latencyMs) ms · \(entry.model)")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                     Spacer()
                     Button(role: .destructive, action: onDelete) { Image(systemName: "trash") }
                 }
-                section("Ergebnis", entry.finalText)
-                section("Rohtranskript", entry.rawTranscript)
+                section("Result", entry.finalText)
+                section("Raw transcript", entry.rawTranscript)
             }
             .padding()
         }
@@ -118,7 +118,7 @@ private struct EntryDetailView: View {
             HStack {
                 Text(title).font(.subheadline.weight(.semibold))
                 Spacer()
-                Button("Kopieren") {
+                Button("Copy") {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(text, forType: .string)
                 }

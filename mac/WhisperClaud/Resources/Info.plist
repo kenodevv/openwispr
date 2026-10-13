@@ -29,6 +29,6 @@
 	<key>NSHumanReadableCopyright</key>
 	<string></string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>WhisperClaud nimmt deine Stimme auf und wandelt sie lokal auf dem Mac in Text um.</string>
+	<string>WhisperClaud records your voice and turns it into text locally on this Mac.</string>
 </dict>
 </plist>

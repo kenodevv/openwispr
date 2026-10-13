@@ -39,11 +39,11 @@ enum ModelStatus: Equatable {
 
     var label: String {
         switch self {
-        case .idle: return "nicht geladen"
-        case .downloading(let p): return "lädt \(Int(p * 100)) %"
-        case .loading: return "initialisiert"
-        case .ready: return "bereit"
-        case .failed(let m): return "Fehler: \(m)"
+        case .idle: return "not loaded"
+        case .downloading(let p): return "downloading \(Int(p * 100)) %"
+        case .loading: return "initializing"
+        case .ready: return "ready"
+        case .failed(let m): return "error: \(m)"
         }
     }
 }

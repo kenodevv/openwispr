@@ -4,7 +4,7 @@ import QuartzCore
 
 enum RecorderError: LocalizedError {
     case noInput
-    var errorDescription: String? { "Kein Mikrofon-Eingang gefunden." }
+    var errorDescription: String? { "No microphone input found." }
 }
 
 /// Captures the microphone and converts live to 16 kHz mono Float32 (what Parakeet expects).

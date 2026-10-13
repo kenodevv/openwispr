@@ -21,7 +21,7 @@ struct OnboardingView: View {
         VStack(spacing: 0) {
             HStack(spacing: 6) {
                 ForEach(Step.allCases, id: \.rawValue) { s in
-                    Capsule().fill(s.rawValue <= step.rawValue ? Color.accentColor : Color.secondary.opacity(0.25)).frame(height: 4)
+                    Capsule().fill(s.rawValue <= step.rawValue ? Color.primary : Color.secondary.opacity(0.25)).frame(height: 4)
                 }
             }
             .padding(.horizontal, 32).padding(.top, 20)
@@ -30,10 +30,10 @@ struct OnboardingView: View {
             Spacer()
             HStack {
                 if step != .welcome {
-                    Button("Zurück") { step = Step(rawValue: step.rawValue - 1) ?? .welcome }
+                    Button("Back") { step = Step(rawValue: step.rawValue - 1) ?? .welcome }
                 }
                 Spacer()
-                Button(step == .finish ? "Fertig" : "Weiter") {
+                Button(step == .finish ? "Done" : "Continue") {
                     if step == .finish { finish() } else { step = Step(rawValue: step.rawValue + 1) ?? .finish }
                 }
                 .keyboardShortcut(.defaultAction)
@@ -57,16 +57,16 @@ struct OnboardingView: View {
     private var content: some View {
         switch step {
         case .welcome:
-            page(icon: "waveform", title: "Willkommen bei WhisperClaud",
-                 text: "Taste halten, sprechen, loslassen. Dein Text landet sauber formatiert dort, wo gerade der Cursor steht. Die Spracherkennung läuft lokal auf dem Mac, die Formatierung macht Claude.")
+            page(icon: "waveform", title: "Welcome to WhisperClaud",
+                 text: "Hold a key, speak, release. Your text lands cleanly formatted wherever the cursor is. Speech recognition runs on this Mac; cleanup is done by Claude, a local model, or plain rules.")
         case .microphone:
-            permissionPage(icon: "mic.fill", title: "Mikrofon", granted: state.permissions.microphone,
-                           text: "WhisperClaud braucht Zugriff aufs Mikrofon. Die Aufnahme bleibt auf diesem Mac.",
+            permissionPage(icon: "mic", title: "Microphone", granted: state.permissions.microphone,
+                           text: "WhisperClaud needs the microphone. Recordings stay on this Mac.",
                            action: { AVCaptureDevice.requestAccess(for: .audio) { _ in } },
                            settingsURL: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")
         case .accessibility:
-            permissionPage(icon: "accessibility", title: "Bedienungshilfen", granted: state.permissions.accessibility,
-                           text: "Die einzige Systemfreigabe neben dem Mikrofon: damit erkennt WhisperClaud die Fn-Taste, sieht, in welcher App du bist, und fügt den Text ein. Einmal einschalten reicht, auch nach Updates.",
+            permissionPage(icon: "accessibility", title: "Accessibility", granted: state.permissions.accessibility,
+                           text: "The only system permission besides the microphone: it lets WhisperClaud see the Fn key, know which app you are in, and insert the text. Grant it once; it survives updates.",
                            action: {
                                let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
                                AXIsProcessTrustedWithOptions(options)
@@ -74,55 +74,55 @@ struct OnboardingView: View {
                            settingsURL: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
         case .fnKey:
             VStack(spacing: 16) {
-                Image(systemName: "globe").font(.system(size: 44)).foregroundStyle(.tint)
-                Text("Fn-Taste freigeben").font(.title2.bold())
-                Text("macOS öffnet beim Druck auf 🌐/Fn normalerweise das Emoji-Fenster oder die Apple-Diktierfunktion. Stell in den Systemeinstellungen unter Tastatur „Beim Drücken der 🌐-Taste“ auf „Nichts tun“.")
+                Image(systemName: "globe").font(.system(size: 44))
+                Text("Free up the Fn key").font(.title2.bold())
+                Text("By default macOS opens the emoji picker or Apple dictation on 🌐/Fn. In System Settings → Keyboard set “Press 🌐 key to” to “Do Nothing”.")
                     .multilineTextAlignment(.center).foregroundStyle(.secondary)
-                Button("Tastatur-Einstellungen öffnen") { open("x-apple.systempreferences:com.apple.Keyboard-Settings.extension") }
-                Text("Alternativ kannst du in den Einstellungen einen eigenen Shortcut festlegen.").font(.caption).foregroundStyle(.secondary)
+                Button("Open Keyboard Settings") { open("x-apple.systempreferences:com.apple.Keyboard-Settings.extension") }
+                Text("You can also pick any other shortcut in Settings.").font(.caption).foregroundStyle(.secondary)
             }
         case .apiKey:
             VStack(spacing: 16) {
-                Image(systemName: "sparkles").font(.system(size: 44)).foregroundStyle(.tint)
-                Text("Claude verbinden").font(.title2.bold())
-                Text("Claude entfernt Füllwörter, setzt Satzzeichen und passt den Ton an die App an. Ohne Key wird der Rohtext eingefügt.")
+                Image(systemName: "key").font(.system(size: 44))
+                Text("Connect Claude (optional)").font(.title2.bold())
+                Text("Claude removes fillers, adds punctuation and matches the tone of the app. Without a key, WhisperClaud uses the free rules engine (or Ollama, see Settings).")
                     .multilineTextAlignment(.center).foregroundStyle(.secondary)
-                SecureField("API-Key (sk-ant-…)", text: $apiKey).textFieldStyle(.roundedBorder)
-                TextField("Workspace-ID (optional, wrkspc_…)", text: $workspaceId).textFieldStyle(.roundedBorder)
-                Button("Im Schlüsselbund speichern") {
+                SecureField("API key (sk-ant-…)", text: $apiKey).textFieldStyle(.roundedBorder)
+                TextField("Workspace ID (optional, wrkspc_…)", text: $workspaceId).textFieldStyle(.roundedBorder)
+                Button("Save to Keychain") {
                     Keychain.write(apiKey, account: Keychain.apiKeyAccount)
                     Keychain.write(workspaceId, account: Keychain.workspaceAccount)
                     state.refreshCredentials()
                 }
-                Text(state.hasAPIKey ? "✓ Key hinterlegt" : "Noch kein Key gespeichert").font(.caption).foregroundStyle(.secondary)
+                Text(state.hasAPIKey ? "✓ Key stored" : "No key stored yet").font(.caption).foregroundStyle(.secondary)
             }
         case .model:
             VStack(spacing: 16) {
-                Image(systemName: "cpu").font(.system(size: 44)).foregroundStyle(.tint)
-                Text("Sprachmodell laden").font(.title2.bold())
-                Text("Parakeet TDT v3 (ca. 480 MB) wird einmalig geladen und läuft danach offline auf der Neural Engine. Deutsch, Englisch und 23 weitere Sprachen.")
+                Image(systemName: "cpu").font(.system(size: 44))
+                Text("Speech model").font(.title2.bold())
+                Text("Parakeet TDT v3 (about 480 MB) is downloaded once and then runs offline on the Neural Engine. German, English and 23 more languages.")
                     .multilineTextAlignment(.center).foregroundStyle(.secondary)
                 switch state.modelStatus {
                 case .downloading(let p):
                     ProgressView(value: p).frame(width: 300)
-                    Text("Lädt… \(Int(p * 100)) %").font(.caption)
+                    Text("Downloading… \(Int(p * 100)) %").font(.caption)
                 case .loading:
                     ProgressView().controlSize(.small)
-                    Text("Modell wird initialisiert…").font(.caption)
+                    Text("Initializing model…").font(.caption)
                 case .ready:
-                    Label("Bereit", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+                    Label("Ready", systemImage: "checkmark.circle")
                 case .failed(let message):
-                    Text("Fehler: \(message)").foregroundStyle(.red).font(.caption)
-                    Button("Erneut versuchen") { AppContainer.shared.loadModel() }
+                    Text("Error: \(message)").font(.caption)
+                    Button("Try again") { AppContainer.shared.loadModel() }
                 case .idle:
-                    Button("Download starten") { AppContainer.shared.loadModel() }
+                    Button("Start download") { AppContainer.shared.loadModel() }
                 }
             }
         case .finish:
             VStack(spacing: 14) {
-                Image(systemName: "checkmark.seal.fill").font(.system(size: 40)).foregroundStyle(.green)
-                Text("Jetzt testen").font(.title2.bold())
-                Text("Klick in das Feld, halte Fn, sprich einen Satz mit „ähm“ drin und lass los. Kurz antippen startet Freisprechen (endet bei Stille).")
+                Image(systemName: "checkmark.seal").font(.system(size: 40))
+                Text("Try it").font(.title2.bold())
+                Text("Click into the field, hold Fn, say a sentence with an “um” in it and release. A quick tap starts hands-free mode (ends on silence).")
                     .multilineTextAlignment(.center).foregroundStyle(.secondary)
                 TextEditor(text: $testText)
                     .font(.body)
@@ -130,13 +130,13 @@ struct OnboardingView: View {
                     .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.secondary.opacity(0.3)))
                 HStack(spacing: 14) {
                     statusChip("Fn", state.hotkeysActive || !settings.useFnKey)
-                    statusChip("Bedienungshilfen", state.permissions.accessibility)
-                    statusChip("Modell", state.modelStatus == .ready)
+                    statusChip("Accessibility", state.permissions.accessibility)
+                    statusChip("Model", state.modelStatus == .ready)
                     statusChip("Claude", state.hasAPIKey)
                 }
                 Text(liveStatus).font(.caption).foregroundStyle(.secondary).lineLimit(2)
                 if let error = state.lastError {
-                    Text(error).font(.caption).foregroundStyle(.orange).multilineTextAlignment(.center)
+                    Text(error).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
                 }
             }
             .onAppear {
@@ -148,7 +148,7 @@ struct OnboardingView: View {
 
     private func page(icon: String, title: String, text: String) -> some View {
         VStack(spacing: 16) {
-            Image(systemName: icon).font(.system(size: 44)).foregroundStyle(.tint)
+            Image(systemName: icon).font(.system(size: 44))
             Text(title).font(.title2.bold())
             Text(text).multilineTextAlignment(.center).foregroundStyle(.secondary)
         }
@@ -157,34 +157,34 @@ struct OnboardingView: View {
     private func permissionPage(icon: String, title: String, granted: Bool, text: String,
                                 action: @escaping () -> Void, settingsURL: String) -> some View {
         VStack(spacing: 16) {
-            Image(systemName: icon).font(.system(size: 44)).foregroundStyle(.tint)
+            Image(systemName: icon).font(.system(size: 44))
             Text(title).font(.title2.bold())
             Text(text).multilineTextAlignment(.center).foregroundStyle(.secondary)
             if granted {
-                Label("Erteilt", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+                Label("Granted", systemImage: "checkmark.circle")
             } else {
                 HStack {
-                    Button("Zugriff anfordern", action: action)
-                    Button("Systemeinstellungen öffnen") { open(settingsURL) }
+                    Button("Request access", action: action)
+                    Button("Open System Settings") { open(settingsURL) }
                 }
             }
         }
     }
 
     private func statusChip(_ label: String, _ ok: Bool) -> some View {
-        Label(label, systemImage: ok ? "checkmark.circle.fill" : "xmark.circle.fill")
+        Label(label, systemImage: ok ? "checkmark.circle" : "xmark.circle")
             .font(.caption)
-            .foregroundStyle(ok ? Color.green : Color.red)
+            .foregroundStyle(ok ? Color.primary : Color.secondary)
     }
 
     private var liveStatus: String {
         switch state.pipeline {
-        case .idle: return state.events.last ?? "Warte auf Fn…"
-        case .recording(_, let handsFree): return handsFree ? "Freisprechen – Aufnahme läuft…" : "Aufnahme läuft… (Fn loslassen zum Beenden)"
-        case .transcribing: return "Transkribiere lokal…"
-        case .formatting: return "Claude formatiert…"
-        case .inserting: return "Füge ein…"
-        case .done(let t): return "Fertig: \(t)"
+        case .idle: return state.events.last ?? "Waiting for Fn…"
+        case .recording(_, let handsFree): return handsFree ? "Hands-free – recording…" : "Recording… (release Fn to finish)"
+        case .transcribing: return "Transcribing locally…"
+        case .formatting: return "Formatting…"
+        case .inserting: return "Inserting…"
+        case .done(let t): return "Done: \(t)"
         case .notice(let m), .error(let m): return m
         }
     }

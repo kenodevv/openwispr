@@ -13,7 +13,7 @@ public partial class App : Application
         _singleInstance = new Mutex(true, "WhisperClaud.SingleInstance", out var created);
         if (!created)
         {
-            MessageBox.Show("WhisperClaud läuft bereits (siehe Infobereich).", "WhisperClaud");
+            MessageBox.Show("WhisperClaud is already running (see the system tray).", "WhisperClaud");
             Shutdown();
             return;
         }

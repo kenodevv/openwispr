@@ -35,7 +35,7 @@ public sealed class AppContainer
         _booted = true;
         FileLog.Write($"boot v{typeof(AppContainer).Assembly.GetName().Version} pid={Environment.ProcessId}");
         State.HasApiKey = Credentials.Load() is not null;
-        State.Event($"Start: API-Key {(State.HasApiKey ? "ja" : "nein")}, Hotkey {Settings.Hotkey}");
+        State.Event($"Start: API key {(State.HasApiKey ? "yes" : "no")}, hotkey {HotkeyLabel(Settings.Hotkey)}");
 
         _pill = new PillWindow(State, Settings);
         SetupTray();
@@ -45,7 +45,7 @@ public sealed class AppContainer
         Hook.Pressed += mode => Pipeline.HotkeyPressed(mode);
         Hook.Released += () => Pipeline.HotkeyReleased();
         State.HotkeyActive = Hook.Start();
-        if (!State.HotkeyActive) State.LastError = "Tastatur-Hook konnte nicht installiert werden";
+        if (!State.HotkeyActive) State.LastError = "Keyboard hook could not be installed";
 
         _ = LoadModelAsync();
         if (!Settings.OnboardingCompleted) ShowSettings();
@@ -65,13 +65,13 @@ public sealed class AppContainer
         {
             await Engine.PrepareAsync(progress, CancellationToken.None);
             State.ModelPhase = ModelPhase.Ready;
-            State.Event("Sprachmodell bereit");
+            State.Event("Speech model ready");
         }
         catch (Exception e)
         {
             State.ModelError = e.Message;
             State.ModelPhase = ModelPhase.Failed;
-            State.LastError = "Sprachmodell: " + e.Message;
+            State.LastError = "Speech model: " + e.Message;
         }
     }
 
@@ -106,43 +106,43 @@ public sealed class AppContainer
         if (_tray is null) return;
         var menu = new ContextMenuStrip();
         menu.Items.Add(new ToolStripMenuItem(StatusLine()) { Enabled = false });
-        if (State.LastError is { } err) menu.Items.Add(new ToolStripMenuItem("⚠ " + err) { Enabled = false });
+        if (State.LastError is { } err) menu.Items.Add(new ToolStripMenuItem("! " + err) { Enabled = false });
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add(State.IsRecording ? "Aufnahme stoppen" : "Diktat starten (Freisprechen)", null, (_, _) => Pipeline.ToggleFromMenu());
+        menu.Items.Add(State.IsRecording ? "Stop recording" : "Start dictation (hands-free)", null, (_, _) => Pipeline.ToggleFromMenu());
         menu.Items.Add(new ToolStripSeparator());
-        var diag = new ToolStripMenuItem("Status & Diagnose");
-        diag.DropDownItems.Add(Check("Tastatur-Hook", State.HotkeyActive));
-        diag.DropDownItems.Add(Check("Sprachmodell " + State.ModelLabel, State.ModelPhase == ModelPhase.Ready));
-        diag.DropDownItems.Add(Check("Claude-API-Key", State.HasApiKey));
+        var diag = new ToolStripMenuItem("Status & Diagnostics");
+        diag.DropDownItems.Add(Check("Keyboard hook", State.HotkeyActive));
+        diag.DropDownItems.Add(Check("Speech model " + State.ModelLabel, State.ModelPhase == ModelPhase.Ready));
+        diag.DropDownItems.Add(Check("Claude API key", State.HasApiKey));
         diag.DropDownItems.Add(new ToolStripSeparator());
         foreach (var e in Enumerable.Reverse(State.Events)) diag.DropDownItems.Add(new ToolStripMenuItem(e) { Enabled = false });
         menu.Items.Add(diag);
-        menu.Items.Add("Verlauf & Statistik…", null, (_, _) => ShowHistory());
-        menu.Items.Add("Einstellungen…", null, (_, _) => ShowSettings());
+        menu.Items.Add("History & Stats…", null, (_, _) => ShowHistory());
+        menu.Items.Add("Settings…", null, (_, _) => ShowSettings());
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("WhisperClaud beenden", null, (_, _) => Application.Current.Shutdown());
+        menu.Items.Add("Quit WhisperClaud", null, (_, _) => Application.Current.Shutdown());
         _tray.ContextMenuStrip = menu;
         _tray.Text = Truncate("WhisperClaud – " + StatusLine(), 63);
     }
 
-    private static ToolStripMenuItem Check(string label, bool ok) => new((ok ? "✅ " : "❌ ") + label) { Enabled = false };
+    private static ToolStripMenuItem Check(string label, bool ok) => new((ok ? "✓ " : "✗ ") + label) { Enabled = false };
 
     private string StatusLine() => State.Phase switch
     {
-        PipelinePhase.Idle => State.ModelPhase != ModelPhase.Ready ? $"Sprachmodell: {State.ModelLabel}" : $"Bereit – {HotkeyLabel(Settings.Hotkey)} halten und sprechen",
-        PipelinePhase.Recording => State.Mode == Core.DictationMode.Command ? "Befehl wird aufgenommen…" : (State.HandsFree ? "Freisprechen aktiv…" : "Aufnahme…"),
-        PipelinePhase.Transcribing => "Transkribiere…",
-        PipelinePhase.Formatting => "Formatiere…",
-        PipelinePhase.Inserting => "Füge Text ein…",
-        PipelinePhase.Done => $"Fertig ({State.LastLatencyMs} ms)",
+        PipelinePhase.Idle => State.ModelPhase != ModelPhase.Ready ? $"Speech model: {State.ModelLabel}" : $"Ready – hold {HotkeyLabel(Settings.Hotkey)} and speak",
+        PipelinePhase.Recording => State.Mode == Core.DictationMode.Command ? "Recording command…" : (State.HandsFree ? "Hands-free recording…" : "Recording…"),
+        PipelinePhase.Transcribing => "Transcribing…",
+        PipelinePhase.Formatting => "Formatting…",
+        PipelinePhase.Inserting => "Inserting text…",
+        PipelinePhase.Done => $"Done ({State.LastLatencyMs} ms)",
         _ => State.Message,
     };
 
     public static string HotkeyLabel(HotkeyChoice choice) => choice switch
     {
-        HotkeyChoice.CtrlWin => "Strg + Win",
-        HotkeyChoice.RightCtrl => "rechte Strg",
-        HotkeyChoice.RightAlt => "rechte Alt (AltGr)",
+        HotkeyChoice.CtrlWin => "Ctrl + Win",
+        HotkeyChoice.RightCtrl => "Right Ctrl",
+        HotkeyChoice.RightAlt => "Right Alt (AltGr)",
         HotkeyChoice.F13 => "F13",
         _ => choice.ToString(),
     };

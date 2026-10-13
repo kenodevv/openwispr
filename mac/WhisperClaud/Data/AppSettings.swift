@@ -7,8 +7,8 @@ enum HotkeyMode: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .pushToTalk: return "Halten zum Sprechen (Push-to-Talk)"
-        case .toggle: return "Drücken zum Starten, nochmal zum Stoppen"
+        case .pushToTalk: return "Hold to talk (push-to-talk)"
+        case .toggle: return "Press to start, press again to stop"
         }
     }
 }
@@ -18,9 +18,9 @@ enum DictationLanguage: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .auto: return "Automatisch erkennen"
-        case .de: return "Deutsch"
-        case .en: return "Englisch"
+        case .auto: return "Detect automatically"
+        case .de: return "German"
+        case .en: return "English"
         }
     }
 }
@@ -30,8 +30,8 @@ enum InsertionStrategy: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .paste: return "Einfügen per Zwischenablage (empfohlen)"
-        case .accessibility: return "Direkt per Accessibility, sonst Zwischenablage"
+        case .paste: return "Paste via clipboard (recommended)"
+        case .accessibility: return "Accessibility API, clipboard as fallback"
         }
     }
 }
@@ -43,9 +43,9 @@ enum ClaudeModel: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .opus: return "Claude Opus 5.5 – beste Qualität"
-        case .sonnet: return "Claude Sonnet 5.5 – schnell"
-        case .haiku: return "Claude Haiku 5.5 – am schnellsten und günstigsten"
+        case .opus: return "Claude Opus 5.5 – best quality"
+        case .sonnet: return "Claude Sonnet 5.5 – fast"
+        case .haiku: return "Claude Haiku 5.5 – fastest and cheapest"
         }
     }
     /// Server-side refusal fallbacks exist for Opus/Sonnet, not for Haiku.
@@ -57,9 +57,9 @@ enum FormatterBackend: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .claude: return "Claude (beste Qualität, API-Guthaben)"
-        case .ollama: return "Ollama – lokales LLM, kostenlos"
-        case .rulesOnly: return "Nur Regeln – kostenlos, sofort, ohne KI"
+        case .claude: return "Claude (best quality, API credit)"
+        case .ollama: return "Ollama – local LLM, free"
+        case .rulesOnly: return "Rules only – free, instant, no AI"
         }
     }
 }
@@ -69,9 +69,9 @@ enum Effort: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var label: String {
         switch self {
-        case .low: return "Niedrig (schnellste Antwort)"
-        case .medium: return "Mittel"
-        case .high: return "Hoch"
+        case .low: return "Low (fastest reply)"
+        case .medium: return "Medium"
+        case .high: return "High"
         }
     }
 }

@@ -3,7 +3,7 @@ import Foundation
 
 enum EngineError: LocalizedError {
     case notReady
-    var errorDescription: String? { "Das Sprachmodell ist noch nicht geladen." }
+    var errorDescription: String? { "The speech model is not loaded yet." }
 }
 
 protocol TranscriptionEngine: Sendable {

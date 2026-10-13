@@ -9,7 +9,7 @@ using WhisperClaud.Windows.Services;
 
 namespace WhisperClaud.Windows.UI;
 
-/// <summary>Click-through, non-activating floating capsule at the bottom of the primary screen.</summary>
+/// <summary>Click-through, non-activating floating capsule at the bottom of the primary screen. Monochrome white on black.</summary>
 public partial class PillWindow : Window
 {
     private const int GWL_EXSTYLE = -20;
@@ -33,6 +33,7 @@ public partial class PillWindow : Window
             _bars[i] = new Rectangle { Width = 3, Height = 4, RadiusX = 1.5, RadiusY = 1.5, Fill = Brushes.White, Margin = new Thickness(1, 0, 1, 0), VerticalAlignment = VerticalAlignment.Center };
             Bars.Children.Add(_bars[i]);
         }
+        Dot.Fill = Brushes.White;
         SourceInitialized += (_, _) =>
         {
             var hwnd = new WindowInteropHelper(this).Handle;
@@ -67,27 +68,19 @@ public partial class PillWindow : Window
 
     private void Render()
     {
-        var command = _state.Mode == DictationMode.Command;
-        var accent = command ? Color.FromRgb(175, 82, 222) : Color.FromRgb(255, 59, 48);
-        Dot.Fill = new SolidColorBrush(accent);
-        Dot.Visibility = _state.Phase == PipelinePhase.Recording ? Visibility.Visible : Visibility.Collapsed;
-        Bars.Visibility = _state.Phase == PipelinePhase.Recording ? Visibility.Visible : Visibility.Collapsed;
-        var barBrush = command ? new SolidColorBrush(accent) : Brushes.White;
-        for (var i = 0; i < _bars.Length; i++)
-        {
-            _bars[i].Height = 4 + Math.Min(1, _state.Levels[i]) * 20;
-            _bars[i].Fill = barBrush;
-        }
-        Label.Foreground = Brushes.White;
+        var recording = _state.Phase == PipelinePhase.Recording;
+        Dot.Visibility = recording ? Visibility.Visible : Visibility.Collapsed;
+        Bars.Visibility = recording ? Visibility.Visible : Visibility.Collapsed;
+        for (var i = 0; i < _bars.Length; i++) _bars[i].Height = 4 + Math.Min(1, _state.Levels[i]) * 20;
         Label.Text = _state.Phase switch
         {
-            PipelinePhase.Recording => command ? "Befehl" : (_state.HandsFree ? "Freisprechen" : ""),
-            PipelinePhase.Transcribing => "Transkribiere…",
-            PipelinePhase.Formatting => "✨ Formatiere…",
-            PipelinePhase.Inserting => "Füge ein…",
-            PipelinePhase.Done => "✓ " + (_state.Message.Length == 0 ? "Fertig" : _state.Message),
-            PipelinePhase.Notice => "ⓘ " + _state.Message,
-            PipelinePhase.Error => "⚠ " + _state.Message,
+            PipelinePhase.Recording => _state.Mode == DictationMode.Command ? "Command" : (_state.HandsFree ? "Hands-free" : ""),
+            PipelinePhase.Transcribing => "Transcribing…",
+            PipelinePhase.Formatting => "Formatting…",
+            PipelinePhase.Inserting => "Inserting…",
+            PipelinePhase.Done => "✓ " + (_state.Message.Length == 0 ? "Done" : _state.Message),
+            PipelinePhase.Notice => _state.Message,
+            PipelinePhase.Error => "! " + _state.Message,
             _ => "",
         };
         Label.Visibility = Label.Text.Length == 0 ? Visibility.Collapsed : Visibility.Visible;

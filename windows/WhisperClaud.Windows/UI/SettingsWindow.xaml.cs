@@ -28,25 +28,25 @@ public partial class SettingsWindow : Window
 
     private void FillLists()
     {
-        HotkeyBox.ItemsSource = Enum.GetValues<HotkeyChoice>().Select(h => new Choice<HotkeyChoice>(h, AppContainer.HotkeyLabel(h) + " halten")).ToList();
-        ModeBox.ItemsSource = new[] { new Choice<HotkeyMode>(HotkeyMode.PushToTalk, "Halten zum Sprechen (Push-to-Talk)"), new Choice<HotkeyMode>(HotkeyMode.Toggle, "Drücken zum Starten, nochmal zum Stoppen") };
-        var mics = new List<Choice<int>> { new(-1, "Systemstandard") };
+        HotkeyBox.ItemsSource = Enum.GetValues<HotkeyChoice>().Select(h => new Choice<HotkeyChoice>(h, "Hold " + AppContainer.HotkeyLabel(h))).ToList();
+        ModeBox.ItemsSource = new[] { new Choice<HotkeyMode>(HotkeyMode.PushToTalk, "Hold to talk (push-to-talk)"), new Choice<HotkeyMode>(HotkeyMode.Toggle, "Press to start, press again to stop") };
+        var mics = new List<Choice<int>> { new(-1, "System default") };
         mics.AddRange(AudioRecorder.InputDevices().Select(d => new Choice<int>(d.Number, d.Name)));
         MicBox.ItemsSource = mics;
-        LanguageBox.ItemsSource = new[] { new Choice<DictationLanguage>(DictationLanguage.Auto, "Sprache automatisch erkennen"), new Choice<DictationLanguage>(DictationLanguage.De, "Deutsch"), new Choice<DictationLanguage>(DictationLanguage.En, "Englisch") };
+        LanguageBox.ItemsSource = new[] { new Choice<DictationLanguage>(DictationLanguage.Auto, "Detect language automatically"), new Choice<DictationLanguage>(DictationLanguage.De, "German"), new Choice<DictationLanguage>(DictationLanguage.En, "English") };
         BackendBox.ItemsSource = new[]
         {
-            new Choice<FormatterBackend>(FormatterBackend.Claude, "Claude (beste Qualität, API-Guthaben)"),
-            new Choice<FormatterBackend>(FormatterBackend.Ollama, "Ollama – lokales LLM, kostenlos"),
-            new Choice<FormatterBackend>(FormatterBackend.RulesOnly, "Nur Regeln – kostenlos, sofort, ohne KI"),
+            new Choice<FormatterBackend>(FormatterBackend.Claude, "Claude (best quality, API credit)"),
+            new Choice<FormatterBackend>(FormatterBackend.Ollama, "Ollama – local LLM, free"),
+            new Choice<FormatterBackend>(FormatterBackend.RulesOnly, "Rules only – free, instant, no AI"),
         };
         ModelBox.ItemsSource = new[]
         {
-            new Choice<string>(ClaudeModels.Haiku, "Claude Haiku 5.5 – am schnellsten und günstigsten"),
-            new Choice<string>(ClaudeModels.Sonnet, "Claude Sonnet 5.5 – schnell"),
-            new Choice<string>(ClaudeModels.Opus, "Claude Opus 5.5 – beste Qualität"),
+            new Choice<string>(ClaudeModels.Haiku, "Claude Haiku 5.5 – fastest and cheapest"),
+            new Choice<string>(ClaudeModels.Sonnet, "Claude Sonnet 5.5 – fast"),
+            new Choice<string>(ClaudeModels.Opus, "Claude Opus 5.5 – best quality"),
         };
-        EffortBox.ItemsSource = new[] { new Choice<string>("low", "Effort: niedrig (schnellste Antwort)"), new Choice<string>("medium", "Effort: mittel"), new Choice<string>("high", "Effort: hoch") };
+        EffortBox.ItemsSource = new[] { new Choice<string>("low", "Effort: low (fastest reply)"), new Choice<string>("medium", "Effort: medium"), new Choice<string>("high", "Effort: high") };
     }
 
     private void LoadFromSettings()
@@ -107,7 +107,7 @@ public partial class SettingsWindow : Window
     {
         Credentials.Save(ApiKeyBox.Password, WorkspaceBox.Text);
         _container.State.HasApiKey = Credentials.Load() is not null;
-        KeyStatus.Text = _container.State.HasApiKey ? "Key gespeichert" : "Kein Key";
+        KeyStatus.Text = _container.State.HasApiKey ? "Key stored" : "No key";
         S.OnboardingCompleted = true;
         S.Save();
     }
@@ -116,13 +116,13 @@ public partial class SettingsWindow : Window
     {
         SaveKey_Click(sender, e);
         var formatter = _container.Pipeline.FormatterForTest();
-        if (formatter is null) { TestResult.Text = "Kein Key gespeichert bzw. Engine ohne LLM."; return; }
+        if (formatter is null) { TestResult.Text = "No key stored, or the engine has no LLM."; return; }
         TestButton.IsEnabled = false;
-        TestResult.Text = "Teste…";
+        TestResult.Text = "Testing…";
         try
         {
-            var result = await formatter.CompleteAsync(FlowPrompts.DictationSystem, "", FlowPrompts.DictationUser("ähm das ist ein test"), 64, CancellationToken.None);
-            TestResult.Text = $"✓ {result.Model} · {result.LatencyMs} ms · Antwort: „{result.Text}“";
+            var result = await formatter.CompleteAsync(FlowPrompts.DictationSystem, "", FlowPrompts.DictationUser("um this is a test"), 64, CancellationToken.None);
+            TestResult.Text = $"✓ {result.Model} · {result.LatencyMs} ms · reply: “{result.Text}”";
         }
         catch (Exception ex) { TestResult.Text = "✗ " + ex.Message; }
         TestButton.IsEnabled = true;
@@ -164,26 +164,26 @@ public partial class SettingsWindow : Window
 
     private void ClearHistory_Click(object sender, RoutedEventArgs e)
     {
-        if (MessageBox.Show("Gesamten Verlauf löschen?", "WhisperClaud", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+        if (MessageBox.Show("Delete the entire history?", "WhisperClaud", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
             _container.Store.ClearHistory();
     }
 
     private void UpdateStatus()
     {
         var st = _container.State;
-        TestHint.Text = $"Klick in das Feld, halte {AppContainer.HotkeyLabel(S.Hotkey)}, sprich einen Satz mit „ähm“ drin und lass los. Kurz antippen startet Freisprechen.";
-        TestChecks.Text = $"{(st.HotkeyActive ? "✅" : "❌")} Tastatur-Hook   {(st.ModelPhase == ModelPhase.Ready ? "✅" : "⏳")} Sprachmodell {st.ModelLabel}   {(st.HasApiKey ? "✅" : "❌")} Claude-Key";
+        TestHint.Text = $"Click into the field, hold {AppContainer.HotkeyLabel(S.Hotkey)}, say a sentence with an “um” in it and release. A quick tap starts hands-free mode.";
+        TestChecks.Text = $"{(st.HotkeyActive ? "✓" : "✗")} Keyboard hook   {(st.ModelPhase == ModelPhase.Ready ? "✓" : "…")} Speech model {st.ModelLabel}   {(st.HasApiKey ? "✓" : "✗")} Claude key";
         TestStatus.Text = st.Phase switch
         {
-            PipelinePhase.Idle => st.Events.LastOrDefault() ?? "Warte auf Hotkey…",
-            PipelinePhase.Recording => st.HandsFree ? "Freisprechen – Aufnahme läuft…" : "Aufnahme läuft… (Taste loslassen zum Beenden)",
-            PipelinePhase.Transcribing => "Transkribiere lokal…",
-            PipelinePhase.Formatting => "Formatiere…",
-            PipelinePhase.Inserting => "Füge ein…",
-            PipelinePhase.Done => "Fertig: " + st.Message,
+            PipelinePhase.Idle => st.Events.LastOrDefault() ?? "Waiting for the hotkey…",
+            PipelinePhase.Recording => st.HandsFree ? "Hands-free – recording…" : "Recording… (release the key to finish)",
+            PipelinePhase.Transcribing => "Transcribing locally…",
+            PipelinePhase.Formatting => "Formatting…",
+            PipelinePhase.Inserting => "Inserting…",
+            PipelinePhase.Done => "Done: " + st.Message,
             _ => st.Message,
         };
-        if (st.LastError is { } err) TestStatus.Text += "\n⚠ " + err;
-        KeyStatus.Text = st.HasApiKey ? "Key gespeichert" : "Kein Key";
+        if (st.LastError is { } err) TestStatus.Text += "\n! " + err;
+        KeyStatus.Text = st.HasApiKey ? "Key stored" : "No key";
     }
 }

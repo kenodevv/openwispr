@@ -53,15 +53,15 @@ public sealed class ClaudeFormatter(HttpClient http, ClaudeCredentials credentia
             var started = DateTime.UtcNow;
             HttpResponseMessage response;
             try { response = await http.SendAsync(request, ct); }
-            catch (HttpRequestException e) { throw new FormatterException($"Keine Verbindung: {e.Message}"); }
-            catch (TaskCanceledException) when (!ct.IsCancellationRequested) { throw new FormatterException("Zeitüberschreitung bei der Claude-API."); }
+            catch (HttpRequestException e) { throw new FormatterException($"No connection: {e.Message}"); }
+            catch (TaskCanceledException) when (!ct.IsCancellationRequested) { throw new FormatterException("The Claude API timed out."); }
             using (response)
             {
                 var json = await response.Content.ReadAsStringAsync(ct);
                 var latency = (int)(DateTime.UtcNow - started).TotalMilliseconds;
                 var status = (int)response.StatusCode;
                 if (status == 200) return Parse(json, latency);
-                if (status is 401 or 403) throw new FormatterException($"API-Key abgelehnt: {ErrorMessage(json)}");
+                if (status is 401 or 403) throw new FormatterException($"API key rejected: {ErrorMessage(json)}");
                 if (status == 429 && attempt < 2)
                 {
                     var wait = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(1.5);
@@ -69,7 +69,7 @@ public sealed class ClaudeFormatter(HttpClient http, ClaudeCredentials credentia
                     continue;
                 }
                 if (status >= 500 && attempt < 2) { await Task.Delay(1000, ct); continue; }
-                throw new FormatterException($"Claude-API Fehler {status}: {ErrorMessage(json)}");
+                throw new FormatterException($"Claude API error {status}: {ErrorMessage(json)}");
             }
         }
     }
@@ -82,7 +82,7 @@ public sealed class ClaudeFormatter(HttpClient http, ClaudeCredentials credentia
         if (stop == "refusal")
         {
             var why = root.TryGetProperty("stop_details", out var sd) && sd.ValueKind == JsonValueKind.Object && sd.TryGetProperty("category", out var cat) ? cat.GetString() : null;
-            throw new FormatterException($"Claude hat abgelehnt: {why ?? "Sicherheitsfilter"}");
+            throw new FormatterException($"Claude declined: {why ?? "safety filter"}");
         }
         var text = string.Concat(root.GetProperty("content").EnumerateArray()
             .Where(b => b.GetProperty("type").GetString() == "text")
@@ -98,7 +98,7 @@ public sealed class ClaudeFormatter(HttpClient http, ClaudeCredentials credentia
         try
         {
             using var doc = JsonDocument.Parse(json);
-            return doc.RootElement.GetProperty("error").GetProperty("message").GetString() ?? "unbekannt";
+            return doc.RootElement.GetProperty("error").GetProperty("message").GetString() ?? "unknown";
         }
         catch { return json.Length > 200 ? json[..200] : json; }
     }
@@ -124,11 +124,11 @@ public sealed class OllamaFormatter(HttpClient http, string baseUrl, string mode
         var started = DateTime.UtcNow;
         HttpResponseMessage response;
         try { response = await http.PostAsJsonAsync(baseUrl.TrimEnd('/') + "/api/chat", body, ct); }
-        catch (HttpRequestException e) { throw new FormatterException($"Ollama nicht erreichbar ({baseUrl}): {e.Message}"); }
+        catch (HttpRequestException e) { throw new FormatterException($"Ollama unreachable ({baseUrl}): {e.Message}"); }
         using (response)
         {
             var json = await response.Content.ReadAsStringAsync(ct);
-            if (!response.IsSuccessStatusCode) throw new FormatterException($"Ollama Fehler {(int)response.StatusCode}: {json}");
+            if (!response.IsSuccessStatusCode) throw new FormatterException($"Ollama error {(int)response.StatusCode}: {json}");
             using var doc = JsonDocument.Parse(json);
             var text = doc.RootElement.GetProperty("message").GetProperty("content").GetString() ?? "";
             var latency = (int)(DateTime.UtcNow - started).TotalMilliseconds;
