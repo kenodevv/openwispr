@@ -1,0 +1,36 @@
+name: macOS
+
+on:
+  push:
+    branches: [main]
+    paths: ["mac/**", "shared/**", ".github/workflows/mac.yml"]
+  pull_request:
+    paths: ["mac/**", "shared/**", ".github/workflows/mac.yml"]
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.4.app || sudo xcode-select -s /Applications/Xcode.app
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project
+        working-directory: mac
+        run: make generate
+      - name: Build and unit-test
+        working-directory: mac
+        run: |
+          xcodebuild -project WhisperClaud.xcodeproj -scheme WhisperClaud -configuration Debug \
+            -derivedDataPath build -destination 'platform=macOS' \
+            CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= \
+            test -only-testing:WhisperClaudTests/FlowFormatterTests 2>&1 | tail -40
+          test "${PIPESTATUS[0]}" -eq 0
+      - name: Package app
+        working-directory: mac
+        run: ditto -c -k --keepParent build/Build/Products/Debug/WhisperClaud.app WhisperClaud-macOS.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WhisperClaud-macOS
+          path: mac/WhisperClaud-macOS.zip

@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>WhisperClaud.Core</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../../shared/prompts/dictation.md" LogicalName="prompts.dictation.md" />
+    <EmbeddedResource Include="../../shared/prompts/command.md" LogicalName="prompts.command.md" />
+  </ItemGroup>
+</Project>

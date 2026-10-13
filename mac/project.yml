@@ -1,0 +1,76 @@
+name: WhisperClaud
+options:
+  bundleIdPrefix: de.keno
+  deploymentTarget:
+    macOS: "15.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    SWIFT_STRICT_CONCURRENCY: minimal
+    MACOSX_DEPLOYMENT_TARGET: "15.0"
+    # Signing comes from the environment (see Makefile / Local.mk). Defaults to ad-hoc.
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "${CODE_SIGN_IDENTITY}"
+    DEVELOPMENT_TEAM: "${DEVELOPMENT_TEAM}"
+    PROVISIONING_PROFILE_SPECIFIER: ""
+    ENABLE_HARDENED_RUNTIME: NO
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+packages:
+  FluidAudio:
+    url: https://github.com/FluidInference/FluidAudio.git
+    from: "0.17.7"
+  KeyboardShortcuts:
+    url: https://github.com/sindresorhus/KeyboardShortcuts
+    from: "1.10.0"
+targets:
+  WhisperClaud:
+    type: application
+    platform: macOS
+    sources:
+      - path: WhisperClaud
+        excludes:
+          - "Resources/Info.plist"
+      - path: ../shared/prompts
+        type: folder
+        buildPhase: resources
+    dependencies:
+      - package: FluidAudio
+      - package: KeyboardShortcuts
+    info:
+      path: WhisperClaud/Resources/Info.plist
+      properties:
+        CFBundleName: WhisperClaud
+        CFBundleDisplayName: WhisperClaud
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        CFBundleIconFile: ""
+        LSUIElement: true
+        LSMinimumSystemVersion: "15.0"
+        NSMicrophoneUsageDescription: "WhisperClaud nimmt deine Stimme auf und wandelt sie lokal auf dem Mac in Text um."
+        NSHumanReadableCopyright: ""
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: de.keno.whisperclaud
+        GENERATE_INFOPLIST_FILE: NO
+  WhisperClaudTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources: [WhisperClaudTests]
+    dependencies:
+      - target: WhisperClaud
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: de.keno.whisperclaud.tests
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  WhisperClaud:
+    build:
+      targets:
+        WhisperClaud: all
+        WhisperClaudTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets: [WhisperClaudTests]

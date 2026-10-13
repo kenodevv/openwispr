@@ -1,0 +1,18 @@
+# build output
+mac/build/
+mac/*.xcodeproj
+windows/**/bin/
+windows/**/obj/
+*.user
+
+# local machine config (signing identity etc.)
+mac/Local.mk
+.env
+.env.*
+
+# OS / editor
+.DS_Store
+xcuserdata/
+.swiftpm/
+.vs/
+.idea/
