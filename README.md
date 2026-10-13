@@ -12,7 +12,7 @@ Hold a key, speak, release. Your words land in whatever you were typing, cleaned
 
 ```bash
 brew install xcodegen
-git clone https://github.com/kenococo/whisperclaud && cd whisperclaud/mac
+git clone https://github.com/kenodevv/whisperclaud && cd whisperclaud/mac
 make run
 ```
 
@@ -25,7 +25,7 @@ Signing: builds are ad-hoc signed by default, which works locally. To keep permi
 Download the latest build from the Actions artifacts (release downloads coming) or build it yourself:
 
 ```powershell
-git clone https://github.com/kenococo/whisperclaud; cd whisperclaud\windows
+git clone https://github.com/kenodevv/whisperclaud; cd whisperclaud\windows
 dotnet publish WhisperClaud.Windows -c Release -r win-x64 -o publish
 .\publish\WhisperClaud.exe
 ```
