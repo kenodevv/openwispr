@@ -53,6 +53,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: de.keno.openwispr
         GENERATE_INFOPLIST_FILE: NO
+        SWIFT_OBJC_BRIDGING_HEADER: OpenWispr/Support/OpenWispr-Bridging-Header.h
   OpenWisprTests:
     type: bundle.unit-test
     platform: macOS

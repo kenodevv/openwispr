@@ -36,6 +36,13 @@ final class AppContainer {
         state.refreshCredentials()
         state.event("Start: microphone \(state.permissions.microphone ? "yes" : "no"), accessibility \(state.permissions.accessibility ? "yes" : "no"), API key \(state.hasAPIKey ? "yes" : "no")")
         pill.start()
+        if let crash = CrashReport.takePrevious() {
+            let time = crash.date.formatted(date: .omitted, time: .shortened)
+            let reason = crash.reason.components(separatedBy: "\n").first ?? crash.reason
+            state.lastError = "Crashed at \(time) and restarted: \(reason)"
+            FileLog.write("previous crash details:\n\(crash.reason)")
+            pipeline.show(.error("OpenWispr crashed and restarted – see menu"), duration: 5)
+        }
 
         hotkeys.onPress = { [weak self] mode in self?.pipeline.hotkeyPressed(mode) }
         hotkeys.onRelease = { [weak self] in self?.pipeline.hotkeyReleased() }

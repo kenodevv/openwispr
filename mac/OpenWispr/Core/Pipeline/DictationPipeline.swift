@@ -265,7 +265,7 @@ final class DictationPipeline {
         }
     }
 
-    private func show(_ transient: PipelineState, duration: TimeInterval = 1.8) {
+    func show(_ transient: PipelineState, duration: TimeInterval = 1.8) {
         state.pipeline = transient
         if case .error = transient { SoundFeedback.error() }
         resetGeneration += 1

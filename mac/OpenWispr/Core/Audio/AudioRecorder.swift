@@ -38,13 +38,32 @@ final class AudioRecorder {
 
     private var preparedDeviceUID: String?
     private(set) var peakLevel: Float = 0
+    /// Set when the engine reports a configuration change (device switched, sample rate changed, sleep/wake).
+    /// A prepared engine with a stale format makes `installTap` raise an NSException, so it gets rebuilt.
+    private var engineIsStale = false
+    private var configObserver: NSObjectProtocol?
 
     /// Builds and prepares the engine ahead of time so `start` is near-instant.
     func prewarm(deviceUID: String?) {
         guard !isRunning else { return }
         let uid = (deviceUID?.isEmpty == false) ? deviceUID : nil
-        if preparedDeviceUID == uid, converter != nil { return }
+        let stale = lock.withLock { engineIsStale }
+        if !stale, preparedDeviceUID == uid, converter != nil { return }
+        rebuildEngine(deviceUID: uid)
+    }
+
+    private func rebuildEngine(deviceUID uid: String?) {
+        if let configObserver { NotificationCenter.default.removeObserver(configObserver) }
         engine = AVAudioEngine()
+        lock.withLock { engineIsStale = false }
+        configObserver = NotificationCenter.default.addObserver(
+            forName: .AVAudioEngineConfigurationChange, object: engine, queue: nil
+        ) { [weak self] _ in
+            guard let self else { return }
+            self.lock.withLock { self.engineIsStale = true }
+            FileLog.write("Audio configuration changed")
+        }
+        preparedDeviceUID = nil
         if let uid { AudioDevices.setInputDevice(uid: uid, on: engine) }
         let format = engine.inputNode.outputFormat(forBus: 0)
         guard format.sampleRate > 0, format.channelCount > 0 else { converter = nil; return }
@@ -56,9 +75,6 @@ final class AudioRecorder {
     func start(deviceUID: String?, silenceTimeout: TimeInterval?) throws {
         guard !isRunning else { return }
         prewarm(deviceUID: deviceUID)
-        let input = engine.inputNode
-        let format = input.outputFormat(forBus: 0)
-        guard format.sampleRate > 0, format.channelCount > 0, converter != nil else { throw RecorderError.noInput }
         peakLevel = 0
 
         lock.withLock {
@@ -71,12 +87,37 @@ final class AudioRecorder {
         startedAt = CACurrentMediaTime()
         lastSpeechAt = startedAt
 
-        input.installTap(onBus: 0, bufferSize: 2048, format: format) { [weak self] buffer, _ in
-            self?.handle(buffer)
+        do {
+            try startEngine()
+        } catch {
+            // Usually a format change the notification has not reported yet: one retry on a fresh engine.
+            FileLog.write("Recorder start failed (\(error.localizedDescription)), rebuilding audio engine")
+            rebuildEngine(deviceUID: (deviceUID?.isEmpty == false) ? deviceUID : nil)
+            try startEngine()
+        }
+        isRunning = true
+    }
+
+    private func startEngine() throws {
+        let input = engine.inputNode
+        let format = input.outputFormat(forBus: 0)
+        guard format.sampleRate > 0, format.channelCount > 0, let current = converter else { throw RecorderError.noInput }
+        if current.inputFormat != format {
+            converter = AVAudioConverter(from: format, to: targetFormat)
+        }
+
+        try OWObjC.catching {
+            input.installTap(onBus: 0, bufferSize: 2048, format: format) { [weak self] buffer, _ in
+                self?.handle(buffer)
+            }
         }
         engine.prepare()
-        try engine.start()
-        isRunning = true
+        do {
+            try engine.start()
+        } catch {
+            input.removeTap(onBus: 0)
+            throw error
+        }
     }
 
     func stop() -> [Float] {
