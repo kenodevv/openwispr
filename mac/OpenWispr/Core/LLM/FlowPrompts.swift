@@ -16,6 +16,13 @@ enum FlowPrompts {
 
     static let commandSystem = loadPrompt("command")
 
+    static let dictationMinimalSystem = loadPrompt("dictation_minimal")
+
+    /// Only spellings: window title and text before the cursor stay out, context from an AI chat invites answering.
+    static func minimalDynamic(dictionary: [DictionaryHint]) -> String {
+        dictionary.isEmpty ? "" : "Spellings this user prefers, for words that were clearly misheard: \(dictionary.map(\.term).joined(separator: "; "))"
+    }
+
     static func dynamicBlock(context: FocusContext?, dictionary: [DictionaryHint], hasSnippets: Bool, language: DictationLanguage) -> String {
         var lines: [String] = []
         if let context, !context.appName.isEmpty {
