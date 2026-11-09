@@ -135,6 +135,7 @@ public sealed class DictationPipeline
         var modelUsed = "parakeet-v3";
         var llmMs = 0;
         string? aiFailure = null;
+        List<string>? edits = null;
         var formatter = MakeFormatter();
 
         if (formatter is not null)
@@ -144,7 +145,15 @@ public sealed class DictationPipeline
             var promptContext = _settings.ContextAwareness ? _context : null;
             try
             {
-                if (_mode == DictationMode.Dictation)
+                if (_mode == DictationMode.Dictation && _settings.DictationStyle == DictationStyle.Minimal && formatter is IEditFormatter editFormatter)
+                {
+                    var outcome = await MinimalDictation.RunAsync(editFormatter, raw, dictionary, CancellationToken.None, snippets.Select(s => s.Trigger.Trim()).ToList());
+                    finalText = FlowFormatter.ExpandSnippetsDirectly(outcome.Text, snippets);
+                    if (outcome.Llm is not null) modelUsed = outcome.Llm.Model;
+                    edits = outcome.Decisions.Select(d => $"{d.Verdict}: {d.Edit.From} -> {d.Edit.To}").ToList();
+                    if (outcome.Failure is not null) FileLog.Write("Minimal cleanup kept the transcript: " + outcome.Failure);
+                }
+                else if (_mode == DictationMode.Dictation)
                 {
                     var snip = FlowFormatter.ApplySnippets(raw, snippets);
                     var dynamic = FlowPrompts.DynamicBlock(promptContext, dictionary, snip.Placeholders.Count > 0, _settings.Language);
@@ -189,7 +198,7 @@ public sealed class DictationPipeline
         _state.LastLatencyMs = totalMs;
         if (!_settings.PrivacyMode)
             _store.Append(new DictationEntry { RawTranscript = raw, FinalText = finalText, AppName = _context.AppName, AppId = _context.AppId,
-                Mode = _mode.ToString().ToLowerInvariant(), AudioSeconds = audioSeconds, LatencyMs = totalMs, Model = modelUsed });
+                Mode = _mode.ToString().ToLowerInvariant(), AudioSeconds = audioSeconds, LatencyMs = totalMs, Model = modelUsed, Edits = edits });
         FileLog.Write($"latency transcribe={transcribeMs}ms llm={llmMs}ms total={totalMs}ms audio={audioSeconds:F1}s");
 
         if (aiFailure is not null) Show(PipelinePhase.Error, "Raw text inserted – " + aiFailure, 3);
