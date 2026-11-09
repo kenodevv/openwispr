@@ -64,6 +64,11 @@ enum FormatterBackend: String, CaseIterable, Identifiable {
     }
 }
 
+/// `minimal` keeps the dictated wording and repairs misheard words only; `legacy` restores the old full rewrite.
+enum DictationStyle: String {
+    case minimal, legacy
+}
+
 enum Effort: String, CaseIterable, Identifiable {
     case low, medium, high
     var id: String { rawValue }
@@ -93,6 +98,7 @@ final class AppSettings {
     var effort: Effort { didSet { d.set(effort.rawValue, forKey: "effort") } }
     var aiEnabled: Bool { didSet { d.set(aiEnabled, forKey: "aiEnabled") } }
     var backend: FormatterBackend { didSet { d.set(backend.rawValue, forKey: "backend") } }
+    var dictationStyle: DictationStyle { didSet { d.set(dictationStyle.rawValue, forKey: "dictationStyle") } }
     var ollamaURL: String { didSet { d.set(ollamaURL, forKey: "ollamaURL") } }
     var ollamaModel: String { didSet { d.set(ollamaModel, forKey: "ollamaModel") } }
     var contextAwareness: Bool { didSet { d.set(contextAwareness, forKey: "contextAwareness") } }
@@ -124,6 +130,7 @@ final class AppSettings {
         effort = Effort(rawValue: d.string(forKey: "effort") ?? "") ?? .low
         aiEnabled = d.object(forKey: "aiEnabled") as? Bool ?? true
         backend = FormatterBackend(rawValue: d.string(forKey: "backend") ?? "") ?? .claude
+        dictationStyle = DictationStyle(rawValue: d.string(forKey: "dictationStyle") ?? "") ?? .minimal
         ollamaURL = d.string(forKey: "ollamaURL") ?? "http://localhost:11434"
         ollamaModel = d.string(forKey: "ollamaModel") ?? "qwen3:4b"
         contextAwareness = d.object(forKey: "contextAwareness") as? Bool ?? true

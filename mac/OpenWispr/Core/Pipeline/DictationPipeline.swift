@@ -183,6 +183,20 @@ final class DictationPipeline {
             let promptContext: FocusContext? = settings.contextAwareness ? context : nil
             do {
                 switch mode {
+                case .dictation where settings.dictationStyle == .minimal && settings.backend == .claude:
+                    guard let credentials else { throw ClaudeError.missingKey }
+                    let client = claude
+                    let model = settings.model
+                    let triggers = snippets.map { $0.trigger.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    let outcome = await MinimalDictation.run(raw: raw, dictionary: dictionary, frozen: triggers) { system, dynamic, user, schema, maxTokens in
+                        try await client.completeJSON(systemStatic: system, systemDynamic: dynamic, user: user, schemaJSON: schema,
+                                                      model: model, maxTokens: maxTokens, credentials: credentials)
+                    }
+                    finalText = FlowFormatter.expandSnippetsDirectly(outcome.text, snippets: snippets)
+                    if let llm = outcome.result, !llm.model.isEmpty { modelUsed = llm.model }
+                    let edits = outcome.decisions.map { "\($0.verdict.rawValue): \($0.edit.from) -> \($0.edit.to)" }.joined(separator: " | ")
+                    logger.notice("minimal edits: \(edits, privacy: .public)")
+                    if let failure = outcome.failure { logger.error("minimal cleanup kept the transcript: \(failure, privacy: .public)") }
                 case .dictation:
                     let snip = FlowFormatter.applySnippets(raw, snippets: snippets)
                     let dynamic = FlowPrompts.dynamicBlock(context: promptContext, dictionary: dictionary,
