@@ -8,6 +8,11 @@ public static class FlowPrompts
 {
     public static string DictationSystem { get; } = Load("prompts.dictation.md");
     public static string CommandSystem { get; } = Load("prompts.command.md");
+    public static string DictationMinimalSystem { get; } = Load("prompts.dictation_minimal.md");
+
+    /// <summary>Only spellings: window title and text before the cursor stay out, context from an AI chat invites answering.</summary>
+    public static string MinimalDynamic(IReadOnlyList<DictionaryHint> dictionary) =>
+        dictionary.Count == 0 ? "" : $"Spellings this user prefers, for words that were clearly misheard: {string.Join("; ", dictionary.Select(h => h.Term))}";
 
     private static string Load(string name)
     {

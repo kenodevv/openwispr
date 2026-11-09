@@ -9,6 +9,9 @@ public enum DictationMode { Dictation, Command }
 /// <summary>Which engine cleans up the transcript.</summary>
 public enum FormatterBackend { Claude, Ollama, RulesOnly }
 
+/// <summary>Minimal keeps the transcript and repairs only misheard words; Legacy lets the model rewrite the text.</summary>
+public enum DictationStyle { Minimal, Legacy }
+
 public sealed record DictionaryHint(string Term, IReadOnlyList<string> Misspellings);
 
 public sealed record SnippetDef(string Trigger, string Content);
@@ -38,6 +41,7 @@ public sealed class DictationEntry
     public double AudioSeconds { get; init; }
     public int LatencyMs { get; init; }
     public string Model { get; init; } = "";
+    public List<string>? Edits { get; init; }
     public int WordCount => FinalText.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
 }
 

@@ -10,6 +10,13 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        if (e.Args.Contains(ReplayTool.Arg))
+        {
+            // Task.Run: awaiting on the WPF dispatcher here would deadlock.
+            try { Task.Run(() => ReplayTool.RunAsync(e.Args)).GetAwaiter().GetResult(); }
+            catch (Exception error) { FileLog.Write("Replay failed: " + error); }
+            Environment.Exit(0);
+        }
         _singleInstance = new Mutex(true, "OpenWispr.SingleInstance", out var created);
         if (!created)
         {

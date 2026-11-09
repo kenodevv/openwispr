@@ -24,11 +24,29 @@ public static class ClaudeModels
 }
 
 /// <summary>Raw Messages-API client (there is no official .NET SDK pinned here; keeps the dependency surface at zero).</summary>
-public sealed class ClaudeFormatter(HttpClient http, ClaudeCredentials credentials, string model, string effort) : ITextFormatter
+public sealed class ClaudeFormatter(HttpClient http, ClaudeCredentials credentials, string model, string effort) : ITextFormatter, IEditFormatter
 {
     private static readonly Uri Endpoint = new("https://api.anthropic.com/v1/messages");
+    private static readonly TimeSpan EditTimeout = TimeSpan.FromSeconds(10);
 
-    public async Task<FormatResult> CompleteAsync(string systemStatic, string systemDynamic, string user, int maxTokens, CancellationToken ct)
+    public Task<FormatResult> CompleteAsync(string systemStatic, string systemDynamic, string user, int maxTokens, CancellationToken ct)
+    {
+        var body = Body(systemStatic, systemDynamic, user, maxTokens);
+        body["output_config"] = new { effort };
+        return SendAsync(body, rejectTruncated: false, ct);
+    }
+
+    public async Task<FormatResult> CompleteJsonAsync(string systemStatic, string systemDynamic, string user, string schemaJson, int maxTokens, CancellationToken ct)
+    {
+        var body = Body(systemStatic, systemDynamic, user, maxTokens);
+        using var schema = JsonDocument.Parse(schemaJson);
+        body["output_config"] = new { effort = "low", format = new { type = "json_schema", schema = schema.RootElement } };
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeout.CancelAfter(EditTimeout);
+        return await SendAsync(body, rejectTruncated: true, timeout.Token);
+    }
+
+    private Dictionary<string, object?> Body(string systemStatic, string systemDynamic, string user, int maxTokens)
     {
         var system = new List<object> { new { type = "text", text = systemStatic, cache_control = new { type = "ephemeral" } } };
         if (systemDynamic.Length > 0) system.Add(new { type = "text", text = systemDynamic });
@@ -38,10 +56,13 @@ public sealed class ClaudeFormatter(HttpClient http, ClaudeCredentials credentia
             ["max_tokens"] = maxTokens,
             ["system"] = system,
             ["messages"] = new[] { new { role = "user", content = user } },
-            ["output_config"] = new { effort },
         };
         if (ClaudeModels.SupportsServerFallbacks(model)) body["fallbacks"] = "default";
+        return body;
+    }
 
+    private async Task<FormatResult> SendAsync(Dictionary<string, object?> body, bool rejectTruncated, CancellationToken ct)
+    {
         for (var attempt = 1; ; attempt++)
         {
             using var request = new HttpRequestMessage(HttpMethod.Post, Endpoint);
@@ -60,7 +81,7 @@ public sealed class ClaudeFormatter(HttpClient http, ClaudeCredentials credentia
                 var json = await response.Content.ReadAsStringAsync(ct);
                 var latency = (int)(DateTime.UtcNow - started).TotalMilliseconds;
                 var status = (int)response.StatusCode;
-                if (status == 200) return Parse(json, latency);
+                if (status == 200) return Parse(json, latency, rejectTruncated);
                 if (status is 401 or 403) throw new FormatterException($"API key rejected: {ErrorMessage(json)}");
                 if (status == 429 && attempt < 2)
                 {
@@ -74,11 +95,12 @@ public sealed class ClaudeFormatter(HttpClient http, ClaudeCredentials credentia
         }
     }
 
-    private FormatResult Parse(string json, int latencyMs)
+    private FormatResult Parse(string json, int latencyMs, bool rejectTruncated)
     {
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
         var stop = root.TryGetProperty("stop_reason", out var sr) ? sr.GetString() ?? "end_turn" : "end_turn";
+        if (rejectTruncated && stop == "max_tokens") throw new FormatterException("Claude reply was cut off");
         if (stop == "refusal")
         {
             var why = root.TryGetProperty("stop_details", out var sd) && sd.ValueKind == JsonValueKind.Object && sd.TryGetProperty("category", out var cat) ? cat.GetString() : null;

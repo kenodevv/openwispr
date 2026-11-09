@@ -21,6 +21,7 @@ public sealed class Settings
     public double HandsFreeSilenceSeconds { get; set; } = 1.5;
     public DictationLanguage Language { get; set; } = DictationLanguage.Auto;
     public FormatterBackend Backend { get; set; } = FormatterBackend.Claude;
+    public DictationStyle DictationStyle { get; set; } = DictationStyle.Minimal;
     public string Model { get; set; } = ClaudeModels.Haiku;
     public string Effort { get; set; } = "low";
     public string OllamaUrl { get; set; } = "http://localhost:11434";

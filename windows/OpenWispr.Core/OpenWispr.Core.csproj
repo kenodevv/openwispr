@@ -6,5 +6,6 @@
   <ItemGroup>
     <EmbeddedResource Include="../../shared/prompts/dictation.md" LogicalName="prompts.dictation.md" />
     <EmbeddedResource Include="../../shared/prompts/command.md" LogicalName="prompts.command.md" />
+    <EmbeddedResource Include="../../shared/prompts/dictation_minimal.md" LogicalName="prompts.dictation_minimal.md" />
   </ItemGroup>
 </Project>
